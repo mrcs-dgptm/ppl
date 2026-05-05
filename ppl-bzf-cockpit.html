@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPL(A) · BZF I Cockpit</title>
+
+<style>
+:root{
+  --bg:#07080a;--s1:#0c0f14;--s2:#111620;--s3:#181e2c;
+  --b1:#1c2535;--b2:#273347;
+  --ac:#00d4ff;--ac2:#ff6b35;--ac3:#3dffa0;--ac4:#c084fc;
+  --tx:#c0d4f0;--tx2:#6a85a8;--tx3:#344560;
+  --danger:#ff4060;--warn:#fbbf24;--ok:#34d399;
+  --mono:'Courier New',Courier,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.018) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+
+/* ── HEADER ── */
+#hdr{position:sticky;top:0;z-index:300;background:rgba(7,8,10,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--b2)}
+.hdr-inner{max-width:1300px;margin:0 auto;display:flex;align-items:center;gap:12px;height:54px;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-box{width:34px;height:34px;border:1.5px solid var(--ac);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;letter-spacing:1px}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--tx2);margin-top:1px}
+.sync-status{margin-left:auto;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--tx2)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--tx3)}
+.sync-dot.ok{background:var(--ok)}
+.sync-dot.syncing{background:var(--warn);animation:pulse 1s infinite}
+.sync-dot.err{background:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-token{font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--b2);border-radius:4px;background:transparent;color:var(--tx2);cursor:pointer;transition:.15s}
+.btn-token:hover{border-color:var(--ac);color:var(--ac)}
+
+/* ── NAV TABS ── */
+#nav{background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:54px;z-index:200;overflow-x:auto;scrollbar-width:none}
+#nav::-webkit-scrollbar{display:none}
+.nav-inner{max-width:1300px;margin:0 auto;display:flex;padding:0 16px}
+.ntab{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 18px;border:none;background:none;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
+.ntab:hover{color:var(--tx)}
+.ntab.active{color:var(--ac);border-bottom-color:var(--ac)}
+
+/* ── MAIN ── */
+.page{display:none;max-width:1300px;margin:0 auto;padding:24px 20px 60px;position:relative;z-index:10}
+.page.active{display:block}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-family:var(--mono);font-size:11px;color:var(--ac);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--b1)}
+
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:28px}
+.card{background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:15px;transition:.15s}
+.card:hover{border-color:var(--b2);transform:translateY(-1px)}
+.card-abbr{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--ac);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.badge{font-size:9px;padding:2px 7px;border-radius:3px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase}
+.b-inst{background:rgba(0,212,255,.1);color:var(--ac)}
+.b-eng{background:rgba(255,107,53,.12);color:var(--ac2)}
+.b-nav{background:rgba(61,255,160,.1);color:var(--ac3)}
+.b-atc{background:rgba(192,132,252,.1);color:var(--ac4)}
+.b-wx{background:rgba(251,191,36,.1);color:var(--warn)}
+.b-gen{background:rgba(100,133,168,.1);color:var(--tx2)}
+.b-perf{background:rgba(255,64,96,.1);color:var(--danger)}
+.b-lic{background:rgba(61,255,160,.1);color:var(--ac3)}
+.card-full{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px}
+.card-desc{font-size:12px;color:var(--tx2);line-height:1.5}
+
+/* ── SEARCH ── */
+.search-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.search-input{flex:1;min-width:180px;background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:10px 14px 10px 36px;color:var(--tx);font-family:var(--mono);font-size:13px;outline:none;transition:.15s}
+.search-input:focus{border-color:var(--ac)}
+.search-input::placeholder{color:var(--tx3)}
+.search-wrap{position:relative;flex:1;min-width:180px}
+.search-wrap::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:16px;pointer-events:none}
+.filter-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;padding:8px 14px;border:1px solid var(--b1);border-radius:4px;background:transparent;color:var(--tx2);cursor:pointer;transition:.15s;white-space:nowrap}
+.filter-btn:hover{color:var(--tx);border-color:var(--b2)}
+.filter-btn.on{background:var(--ac);border-color:var(--ac);color:#000}
+
+/* ── PHONETIC ── */
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:20px}
+.ph-card{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:13px 15px;display:flex;align-items:center;gap:13px;transition:.15s}
+.ph-card:hover{border-color:var(--b2)}
+.ph-letter{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--ac);min-width:24px;line-height:1}
+.ph-word{font-family:var(--mono);font-size:13px;color:var(--tx);margin-bottom:2px}
+.ph-pron{font-size:11px;color:var(--tx2);font-style:italic}
+
+/* ── PHRASES ── */
+.phrase-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+.phrase-card{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:13px 16px;display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:start;transition:.15s}
+.phrase-card:hover{border-color:var(--b2)}
+@media(max-width:580px){.phrase-card{grid-template-columns:1fr}}
+.phrase-en{font-family:var(--mono);font-size:13px;color:var(--ac);font-weight:700}
+.phrase-de{font-size:13px;color:var(--tx);margin-bottom:3px}
+.phrase-ctx{font-size:11px;color:var(--tx2);font-style:italic}
+
+/* ── NUMBERS ── */
+.num-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-bottom:20px}
+.num-card{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:11px 14px;display:flex;align-items:center;gap:14px}
+.num-digit{font-family:var(--mono);font-size:22px;color:var(--ac2);min-width:28px}
+.num-word{font-family:var(--mono);font-size:13px;color:var(--tx);margin-bottom:2px}
+.num-pron{font-size:11px;color:var(--tx2)}
+
+/* ── SPEEDS ── */
+.spd-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+.spd-table th{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx2);text-align:left;padding:8px 14px;border-bottom:1px solid var(--b1)}
+.spd-table td{padding:10px 14px;border-bottom:1px solid rgba(28,37,53,.5);vertical-align:top}
+.spd-table tr:hover td{background:var(--s2)}
+.spd-code{font-family:var(--mono);color:var(--ac);font-size:14px}
+.spd-dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+/* ── BZF / SCENARIO ── */
+.bzf-block{margin-bottom:32px}
+.bzf-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ac2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid rgba(255,107,53,.2)}
+.scenario{background:var(--s2);border:1px solid var(--b1);border-left:3px solid var(--ac2);border-radius:6px;padding:15px 17px;margin-bottom:10px}
+.sc-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ac2);margin-bottom:9px}
+.sc-lines{display:flex;flex-direction:column;gap:5px}
+.sc-line{display:flex;gap:9px;align-items:baseline}
+.spk{font-family:var(--mono);font-size:10px;letter-spacing:.5px;min-width:50px;padding:2px 6px;border-radius:2px;text-align:center;flex-shrink:0}
+.spk-atc{background:rgba(0,212,255,.12);color:var(--ac)}
+.spk-pilot{background:rgba(61,255,160,.1);color:var(--ac3)}
+.sc-text{font-size:13px;color:var(--tx);line-height:1.5}
+.sc-trans{font-size:11px;color:var(--tx2);font-style:italic;margin-left:59px;margin-top:-1px}
+.err-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:9px;margin-bottom:12px}
+.err-card{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:13px 15px}
+.err-wrong{font-family:var(--mono);font-size:12px;color:var(--danger);text-decoration:line-through;opacity:.75;margin-bottom:3px}
+.err-right{font-family:var(--mono);font-size:13px;color:var(--ac3);margin-bottom:5px}
+.err-why{font-size:12px;color:var(--tx2)}
+.tip-list{display:flex;flex-direction:column;gap:8px}
+.tip{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:12px 15px;font-size:13px;color:var(--tx);display:flex;gap:11px;align-items:baseline;line-height:1.5}
+.tip-ic{color:var(--ac2);flex-shrink:0}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px}
+.cs-part{background:var(--s3);border:1px solid var(--b1);border-radius:4px;padding:8px 12px}
+.cs-code{font-family:var(--mono);color:var(--ac);display:block;font-size:13px}
+.cs-desc{color:var(--tx2);font-size:11px}
+
+/* ── QUIZ ── */
+#quiz-wrap{max-width:760px;margin:0 auto}
+.quiz-header{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:16px 20px;margin-bottom:16px}
+.quiz-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.qstat{background:var(--s3);border-radius:5px;padding:10px;text-align:center}
+.qstat-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--ac)}
+.qstat-lbl{font-family:var(--mono);font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.progress-bar{height:4px;background:var(--b1);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--ac);border-radius:2px;transition:width .5s ease;box-shadow:0 0 8px rgba(0,212,255,.4)}
+.progress-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--tx2);margin-top:5px}
+.quiz-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.qf-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;padding:6px 12px;border:1px solid var(--b1);border-radius:3px;background:transparent;color:var(--tx2);cursor:pointer;transition:.12s}
+.qf-btn:hover{color:var(--tx);border-color:var(--b2)}
+.qf-btn.on{background:var(--ac);border-color:var(--ac);color:#000}
+.q-card{background:var(--s2);border:1px solid var(--b1);border-radius:8px;overflow:hidden}
+.q-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--s3);border-bottom:1px solid var(--b1)}
+.q-num{font-family:var(--mono);font-size:12px;color:var(--ac);font-weight:600}
+.q-dots{display:flex;gap:4px}
+.qdot{width:8px;height:8px;border-radius:50%;background:var(--b2);transition:.3s}
+.qdot.lit{background:var(--ac);box-shadow:0 0 5px rgba(0,212,255,.6)}
+.q-text{padding:18px 18px 14px;font-size:15px;font-weight:600;color:#fff;line-height:1.5}
+.q-opts{padding:0 14px 14px;display:flex;flex-direction:column;gap:7px}
+.q-opt{display:flex;gap:11px;align-items:flex-start;padding:11px 13px;border:1px solid var(--b1);border-radius:5px;background:transparent;color:var(--tx);text-align:left;cursor:pointer;transition:.12s;font-family:var(--sans);font-size:13px;line-height:1.4;width:100%}
+.q-opt:hover:not(:disabled){border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.04)}
+.opt-ltr{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ac);min-width:17px;margin-top:1px;flex-shrink:0}
+.q-opt.correct{border-color:var(--ac3);background:rgba(61,255,160,.08)}
+.q-opt.correct .opt-ltr{color:var(--ac3)}
+.q-opt.wrong{border-color:var(--danger);background:rgba(255,64,96,.08)}
+.q-opt.wrong .opt-ltr{color:var(--danger)}
+.q-opt:disabled{cursor:default}
+.q-fb{margin:0 14px 12px;padding:11px 13px;border-radius:5px;font-size:13px;line-height:1.5;display:none}
+.q-fb.show{display:block}
+.q-fb.ok{background:rgba(61,255,160,.07);border:1px solid rgba(61,255,160,.25);color:#7dffc0}
+.q-fb.bad{background:rgba(255,64,96,.07);border:1px solid rgba(255,64,96,.25);color:#ff8095}
+.q-next{display:none;width:calc(100% - 28px);margin:0 14px 14px;padding:11px;background:var(--ac);color:#000;border:none;border-radius:5px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:.12s}
+.q-next:hover{opacity:.88}
+.q-next.show{display:block}
+.q-done{display:none;text-align:center;padding:60px 20px}
+.q-done.show{display:block}
+.q-done h2{font-size:28px;font-weight:800;color:var(--ac3);margin:16px 0 8px}
+.q-done p{color:var(--tx2);margin-bottom:28px}
+.btn-restart{padding:12px 28px;background:var(--ac3);color:#000;border:none;border-radius:5px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
+
+/* ── ZAHLENREGELN / LUFTRAUM ── */
+.z-block{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:16px;margin-bottom:14px}
+.z-title{font-family:var(--mono);font-size:10px;color:var(--ac2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px}
+.z-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.z-table th{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)}
+.z-table td{padding:9px 12px;border-bottom:1px solid rgba(28,37,53,.5);vertical-align:top;line-height:1.5}
+.z-table tr:hover td{background:var(--s3)}
+.mono-ex{font-family:var(--mono);font-size:11px;color:var(--ac)}
+.rule-box{background:var(--s3);border-left:3px solid var(--ac2);border-radius:0 5px 5px 0;padding:10px 13px;margin-bottom:8px;font-size:13px;line-height:1.6;color:var(--tx)}
+.rule-box strong{color:#fff}
+.rule-ex{font-family:var(--mono);font-size:11px;color:var(--ac);display:block;margin-top:4px}
+.rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.rb-card{background:var(--s3);border-radius:6px;padding:10px 12px}
+.rb-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;margin-bottom:7px;display:inline-block}
+.tag-must{background:rgba(255,64,96,.15);color:var(--danger)}
+.tag-should{background:rgba(255,107,53,.15);color:var(--ac2)}
+.tag-no{background:rgba(61,255,160,.1);color:var(--ac3)}
+.lr-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px}
+.lr-card{border-radius:8px;padding:14px 16px;border:1px solid var(--b1)}
+.lr-class{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1;margin-bottom:4px}
+.lr-name{font-size:13px;font-weight:600;margin-bottom:7px}
+.lr-rows{font-size:12px;line-height:1.9;color:var(--tx2)}
+.lr-rows strong{color:var(--tx);font-weight:500}
+.xpdr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px}
+.xpdr-card{background:var(--s3);border-radius:6px;padding:12px 14px}
+.xpdr-code{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1;margin-bottom:4px}
+.xpdr-label{font-size:12px;color:var(--tx2)}
+
+/* ── PEILUNGEN ── */
+.q-panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:20px}
+.q-panel{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:15px}
+.q-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;margin-bottom:7px;letter-spacing:.8px}
+.q-ptitle{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
+.q-psub{font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5}
+.q-formula{font-size:12px;color:var(--tx2);background:var(--s3);border-radius:5px;padding:8px 10px;margin-top:8px;line-height:1.6;border-left:3px solid var(--b2)}
+.q-formula strong{color:var(--ac)}
+.full-row{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:15px;margin-bottom:14px}
+
+/* ── TOKEN MODAL ── */
+#modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center}
+#modal-bg.show{display:flex}
+.modal{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:28px;max-width:440px;width:90%}
+.modal h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--tx2);margin-bottom:16px;line-height:1.6}
+.modal input{width:100%;background:var(--s3);border:1px solid var(--b2);border-radius:5px;padding:10px 13px;color:var(--tx);font-family:var(--mono);font-size:13px;outline:none;margin-bottom:8px}
+.modal input:focus{border-color:var(--ac)}
+.modal-btns{display:flex;gap:8px}
+.btn-save{flex:1;padding:10px;background:var(--ac);color:#000;border:none;border-radius:5px;font-family:var(--sans);font-weight:700;cursor:pointer}
+.btn-cancel{padding:10px 16px;border:1px solid var(--b2);background:transparent;color:var(--tx2);border-radius:5px;cursor:pointer;font-family:var(--sans)}
+.modal .gist-row{display:flex;gap:8px;margin-bottom:8px}
+.modal .gist-row input{margin-bottom:0;flex:1}
+</style>
+</head>
+<body>
+
+<!-- TOKEN MODAL -->
+<div id="modal-bg">
+  <div class="modal">
+    <h3>GitHub Gist Sync</h3>
+    <p>Gib dein GitHub Personal Access Token und eine Gist-ID ein. Der Quizfortschritt wird automatisch synchronisiert.<br><br>
+    Token braucht <strong>gist</strong> scope. Neue Gist-ID: leer lassen → wird beim ersten Speichern angelegt.</p>
+    <input type="password" id="inp-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+    <div class="gist-row">
+      <input type="text" id="inp-gist" placeholder="Gist ID (optional, neu = leer lassen)">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-save" onclick="saveToken()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="hdr-inner">
+    <div class="logo">
+      <div class="logo-box">✈</div>
+      <div>
+        <div class="logo-text">PPL(A) · BZF I</div>
+        <div class="logo-sub">Cockpit Reference</div>
+      </div>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Kein Sync</span>
+      <button class="btn-token" onclick="openModal()">⚙ Gist</button>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <button class="ntab active" onclick="showPage('abbrev',this)">Abkürzungen</button>
+    <button class="ntab" onclick="showPage('phonetic',this)">Buchstabieren</button>
+    <button class="ntab" onclick="showPage('phrases',this)">Phraseologie</button>
+    <button class="ntab" onclick="showPage('numbers',this)">Zahlen</button>
+    <button class="ntab" onclick="showPage('speeds',this)">V-Speeds</button>
+    <button class="ntab" onclick="showPage('peilungen',this)">Peilungen</button>
+    <button class="ntab" onclick="showPage('luftraum',this)">Luftraum</button>
+    <button class="ntab" onclick="showPage('zahlen',this)">Zahlenregeln</button>
+    <button class="ntab" onclick="showPage('quiz',this)">Quiz ▸</button>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     PAGE: ABBREVIATIONS
+════════════════════════════════════════════ -->
+<div class="page active" id="page-abbrev">
+  <div class="search-row">
+    <div class="search-wrap">
+      <input class="search-input" type="text" id="abbrev-search" placeholder="Suchen… (QNH, MAYDAY, CTR …)" oninput="renderAbbrev()">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="abbrev-filters">
+      <button class="filter-btn on" onclick="toggleFilter(this,'all')" data-f="all">Alle</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'inst')" data-f="inst">Instrumente</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'eng')" data-f="eng">Motor</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'nav')" data-f="nav">Navigation</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'atc')" data-f="atc">ATC</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'wx')" data-f="wx">Wetter</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'lic')" data-f="lic">Lizenzen</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'gen')" data-f="gen">Allgemein</button>
+    </div>
+  </div>
+  <div class="cards" id="abbrev-cards"></div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: PHONETIC
+════════════════════════════════════════════ -->
+<div class="page" id="page-phonetic">
+  <div class="sec-title">ICAO / NATO Buchstabiertafel</div>
+  <div class="ph-grid" id="ph-grid"></div>
+  <div class="sec-title" style="margin-top:8px">Aussprache Besonderheiten</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">JULIETT</div><div class="card-desc">Nicht "Juliet" – das doppelte T ist entscheidend für Eindeutigkeit</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">ALFA</div><div class="card-desc">Nicht "Alpha" – ICAO schreibt "ALFA" vor</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">FOXTROT</div><div class="card-desc">Nicht "Foxtrott" – nur ein T</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">MIKE</div><div class="card-desc">Einsilbig – nicht "Michael"</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">NOVEMBER</div><div class="card-desc">Alle 8 Buchstaben sprechen – no-VEM-ber</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--warn)">OSCAR</div><div class="card-desc">Nicht "Zero" – Null heißt "Zero" (EN) / "Null" (DE)</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: PHRASES
+════════════════════════════════════════════ -->
+<div class="page" id="page-phrases">
+  <div class="search-row">
+    <div class="search-wrap">
+      <input class="search-input" type="text" id="phrase-search" placeholder="Suchen…" oninput="renderPhrases()">
+    </div>
+  </div>
+  <div class="sec-title">Standard-Redewendungen (DE / EN)</div>
+  <div class="phrase-list" id="phrase-list"></div>
+
+  <div class="sec-title" style="margin-top:8px">Vollständige Dialogszenarien</div>
+  <div id="scenarios-list"></div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: NUMBERS
+════════════════════════════════════════════ -->
+<div class="page" id="page-numbers">
+  <div class="sec-title">Ziffern im Funk</div>
+  <div class="num-grid" id="num-grid"></div>
+  <div class="sec-title" style="margin-top:8px">Besondere Aussprachen</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px">
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">2 → ZWO</div><div class="card-desc">Nicht "ZWEI" – ZWO verhindert Verwechslung mit DREI über Funk</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">5 → FÜNEFF</div><div class="card-desc">Betontes -FF am Ende für bessere Verständlichkeit</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">9 → NEIN-er</div><div class="card-desc">EN: NINER – verhindert Verwechslung mit "NEIN" (Negativ)</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">1000 hPa</div><div class="card-desc">Ausnahme: "EIN TAUSEND" (nicht "eins null null null")</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">FL 200</div><div class="card-desc">"FLUGFLÄCHE ZWO HUNDERT" (nicht "zwo null null")</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac2)">Dezimal</div><div class="card-desc">118.025 → "eins eins acht KOMMA null zwo fünf" (alle 6 Stellen)</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: V-SPEEDS
+════════════════════════════════════════════ -->
+<div class="page" id="page-speeds">
+  <div class="sec-title">V-Speeds – Geschwindigkeiten (Cessna 172 Richtwerte)</div>
+  <table class="spd-table">
+    <thead><tr><th>Kürzel</th><th>Bezeichnung (DE)</th><th>Bezeichnung (EN)</th><th>Wert</th><th>ASI-Farbe</th><th>Bedeutung</th></tr></thead>
+    <tbody id="spd-tbody"></tbody>
+  </table>
+  <div class="sec-title" style="margin-top:8px">Wichtige Merksätze</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+    <div class="card"><div class="card-abbr" style="color:var(--ac3)">Vx vs Vy</div><div class="card-desc">Vx = bester <strong>Winkel</strong> (kurzes Hindernis). Vy = beste <strong>Rate</strong> (maximale Höhe/Zeit)</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac3)">Va</div><div class="card-desc">Unter Va: volle Steuerausschläge ohne Strukturschäden. Sinkt mit reduziertem Gewicht.</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac3)">Vne</div><div class="card-desc">Roter Strich – absolut nie überschreiten. Strukturversagen möglich.</div></div>
+    <div class="card"><div class="card-abbr" style="color:var(--ac3)">Vfe</div><div class="card-desc">Max. Klappengeschwindigkeit. Weißer Bogen endet hier.</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: PEILUNGEN
+════════════════════════════════════════════ -->
+<div class="page" id="page-peilungen">
+  <div class="sec-title">Q-Gruppen & Peilungen – visuell</div>
+
+  <div class="full-row" style="margin-bottom:14px">
+    <div class="z-title">ALLE Q-GRUPPEN IM ÜBERBLICK</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+      <div style="border-left:3px solid var(--ac);background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ac);margin-bottom:3px">QNH</div><div style="font-size:12px;color:var(--tx2)">Höhenmesser-Einstellung → zeigt Höhe über Meeresspiegel (AMSL). Von ATIS/Tower.</div></div>
+      <div style="border-left:3px solid var(--ac3);background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ac3);margin-bottom:3px">QFE</div><div style="font-size:12px;color:var(--tx2)">Höhenmesser-Einstellung → zeigt 0 ft am Platz. Selten genutzt in DE.</div></div>
+      <div style="border-left:3px solid #00d4ff;background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:#00d4ff;margin-bottom:3px">QDM</div><div style="font-size:12px;color:var(--tx2)">Missweisender Kurs ZUR Station. Merke: M = zu <strong style="color:#fff">M</strong>ir. = QDR ± 180°</div></div>
+      <div style="border-left:3px solid var(--warn);background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--warn);margin-bottom:3px">QDR</div><div style="font-size:12px;color:var(--tx2)">Missweisende Peilung VON der Station = VOR-Radial. Merke: R = <strong style="color:#fff">R</strong>aus.</div></div>
+      <div style="border-left:3px solid var(--ac4);background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ac4);margin-bottom:3px">QTE</div><div style="font-size:12px;color:var(--tx2)">Rechtweisende Peilung von der Station. Geografisch (nicht magnetisch).</div></div>
+      <div style="border-left:3px solid var(--tx2);background:var(--s3);border-radius:0 6px 6px 0;padding:10px 13px"><div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx2);margin-bottom:3px">QUJ</div><div style="font-size:12px;color:var(--tx2)">Rechtweisender Kurs zur Station (kein Wind).</div></div>
+    </div>
+  </div>
+
+  <div class="q-panels">
+    <!-- QDM -->
+    <div class="q-panel">
+      <div class="q-badge" style="background:rgba(0,212,255,.1);color:var(--ac)">QDM</div>
+      <div class="q-ptitle">Kurs zur Station</div>
+      <div class="q-psub">Welchen Kurs fliege ich, um zur Station zu kommen? (missweisend, kein Wind)</div>
+      <svg viewBox="0 0 190 190" style="width:100%;max-width:180px;display:block;margin:8px auto">
+        <circle cx="95" cy="95" r="75" fill="none" stroke="#1c2535" stroke-width="1.5"/>
+        <text x="95" y="15" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">N</text>
+        <text x="95" y="184" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">S</text>
+        <text x="12" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">W</text>
+        <text x="178" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">E</text>
+        <circle cx="95" cy="28" r="9" fill="#00d4ff" opacity=".85"/>
+        <text x="95" y="32" text-anchor="middle" font-size="8" fill="#000" font-weight="700">STA</text>
+        <text x="95" y="103" text-anchor="middle" font-size="20" fill="#c0d4f0">✈</text>
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00d4ff" stroke-width="2"/></marker></defs>
+        <line x1="95" y1="84" x2="95" y2="40" stroke="#00d4ff" stroke-width="2.5" marker-end="url(#a1)"/>
+        <text x="95" y="155" text-anchor="middle" font-size="12" fill="#00d4ff" font-weight="700">QDM = 360°</text>
+        <text x="95" y="168" text-anchor="middle" font-size="10" fill="#6a85a8">Kurs zur Station</text>
+      </svg>
+      <div class="q-formula"><strong>Merkhilfe:</strong> QDM → Kurs zu <strong>M</strong>ir (zur Station)</div>
+    </div>
+    <!-- QDR -->
+    <div class="q-panel">
+      <div class="q-badge" style="background:rgba(251,191,36,.12);color:var(--warn)">QDR</div>
+      <div class="q-ptitle">Peilung von der Station</div>
+      <div class="q-psub">Auf welchem Radial bin ich von der Station aus gesehen? = VOR-Radial</div>
+      <svg viewBox="0 0 190 190" style="width:100%;max-width:180px;display:block;margin:8px auto">
+        <circle cx="95" cy="95" r="75" fill="none" stroke="#1c2535" stroke-width="1.5"/>
+        <text x="95" y="15" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">N</text>
+        <text x="95" y="184" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">S</text>
+        <text x="12" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">W</text>
+        <text x="178" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">E</text>
+        <circle cx="95" cy="95" r="9" fill="#fbbf24" opacity=".85"/>
+        <text x="95" y="99" text-anchor="middle" font-size="8" fill="#000" font-weight="700">STA</text>
+        <text x="148" y="58" text-anchor="middle" font-size="18" fill="#c0d4f0">✈</text>
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#fbbf24" stroke-width="2"/></marker></defs>
+        <line x1="105" y1="87" x2="136" y2="63" stroke="#fbbf24" stroke-width="2.5" marker-end="url(#a2)"/>
+        <text x="122" y="73" font-size="10" fill="#fbbf24">45°</text>
+        <text x="95" y="155" text-anchor="middle" font-size="12" fill="#fbbf24" font-weight="700">QDR = 045°</text>
+        <text x="95" y="168" text-anchor="middle" font-size="10" fill="#6a85a8">VOR-Radial</text>
+      </svg>
+      <div class="q-formula"><strong>Merkhilfe:</strong> QDR = <strong>R</strong>aus von der Station. QDR = QDM ± 180°</div>
+    </div>
+    <!-- QDM↔QDR -->
+    <div class="q-panel">
+      <div class="q-badge" style="background:rgba(61,255,160,.1);color:var(--ac3)">QDM ↔ QDR</div>
+      <div class="q-ptitle">Zusammenhang & Formel</div>
+      <div class="q-psub">QDM und QDR sind immer 180° auseinander.</div>
+      <svg viewBox="0 0 200 120" style="width:100%;max-width:200px;display:block;margin:8px auto">
+        <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00d4ff" stroke-width="2"/></marker>
+        <marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#fbbf24" stroke-width="2"/></marker></defs>
+        <circle cx="45" cy="60" r="11" fill="#fbbf24" opacity=".85"/>
+        <text x="45" y="64" text-anchor="middle" font-size="8" fill="#000" font-weight="700">STA</text>
+        <text x="152" y="65" text-anchor="middle" font-size="18" fill="#c0d4f0">✈</text>
+        <line x1="57" y1="55" x2="138" y2="55" stroke="#fbbf24" stroke-width="2" marker-end="url(#a4)"/>
+        <text x="97" y="49" text-anchor="middle" font-size="10" fill="#fbbf24" font-weight="700">QDR 090°</text>
+        <line x1="138" y1="67" x2="57" y2="67" stroke="#00d4ff" stroke-width="2" marker-end="url(#a3)"/>
+        <text x="97" y="81" text-anchor="middle" font-size="10" fill="#00d4ff" font-weight="700">QDM 270°</text>
+        <rect x="20" y="93" width="160" height="24" rx="4" fill="#1a1f2c"/>
+        <text x="100" y="107" text-anchor="middle" font-size="12" fill="#fff" font-weight="600">QDM = QDR ± 180°</text>
+      </svg>
+      <div class="q-formula"><strong>Prüfungstrick:</strong> QDR 045° → QDM = 045+180 = <strong>225°</strong>. Wenn >360 dann −360°.</div>
+    </div>
+    <!-- ADF/RBI -->
+    <div class="q-panel">
+      <div class="q-badge" style="background:rgba(192,132,252,.12);color:var(--ac4)">ADF / RBI</div>
+      <div class="q-ptitle">Funkkompass (Frage 252)</div>
+      <div class="q-psub">RBI zeigt Winkel zwischen Flugzeuglängsachse und Richtung zur NDB-Station.</div>
+      <svg viewBox="0 0 190 190" style="width:100%;max-width:180px;display:block;margin:8px auto">
+        <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#c084fc" stroke-width="2"/></marker>
+        <marker id="a6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6a85a8" stroke-width="1.5"/></marker></defs>
+        <circle cx="95" cy="95" r="75" fill="none" stroke="#1c2535" stroke-width="1.5"/>
+        <text x="95" y="15" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">N</text>
+        <text x="95" y="184" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">S</text>
+        <text x="12" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">W</text>
+        <text x="178" y="99" text-anchor="middle" font-size="11" fill="#6a85a8" font-family="monospace">E</text>
+        <text x="95" y="103" text-anchor="middle" font-size="20" fill="#c0d4f0">✈</text>
+        <line x1="95" y1="80" x2="95" y2="26" stroke="#6a85a8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a6)"/>
+        <text x="95" y="20" text-anchor="middle" font-size="9" fill="#6a85a8">Nase</text>
+        <circle cx="160" cy="95" r="9" fill="#c084fc" opacity=".85"/>
+        <text x="160" y="99" text-anchor="middle" font-size="8" fill="#000" font-weight="700">NDB</text>
+        <line x1="110" y1="95" x2="149" y2="95" stroke="#c084fc" stroke-width="2.5" marker-end="url(#a5)"/>
+        <path d="M95 75 A22 22 0 0 1 117 95" fill="none" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <text x="120" y="84" font-size="10" fill="#c084fc" font-weight="700">090°</text>
+        <text x="95" y="155" text-anchor="middle" font-size="12" fill="#c084fc" font-weight="700">RBI = 090°</text>
+        <text x="95" y="168" text-anchor="middle" font-size="10" fill="#6a85a8">NDB liegt rechts querab</text>
+      </svg>
+      <div class="q-formula"><strong>QDM berechnen:</strong> Kurs + RBI = QDM<br>155° + 025° = <strong>180°</strong> (Frage 253)</div>
+    </div>
+  </div>
+
+  <!-- QNH/QFE visual -->
+  <div class="full-row">
+    <div class="z-title">QNH vs QFE – HÖHENMESSEREINSTELLUNG</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+      <svg viewBox="0 0 200 160" style="width:100%;max-width:220px;display:block;margin:0 auto">
+        <defs><marker id="aqnh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00d4ff" stroke-width="2"/></marker>
+        <marker id="aqfe" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#3dffa0" stroke-width="2"/></marker></defs>
+        <polygon points="0,160 200,160 200,110 140,60 100,90 60,50 20,100 0,120" fill="#111620" opacity=".8"/>
+        <line x1="0" y1="140" x2="200" y2="140" stroke="#00d4ff" stroke-width="1" stroke-dasharray="5 3" opacity=".6"/>
+        <text x="8" y="137" font-size="9" fill="#00d4ff">MSL</text>
+        <text x="148" y="33" text-anchor="middle" font-size="16" fill="#c0d4f0">✈</text>
+        <line x1="148" y1="38" x2="148" y2="137" stroke="#00d4ff" stroke-width="2" marker-end="url(#aqnh)" stroke-dasharray="5 3"/>
+        <text x="156" y="93" font-size="10" fill="#00d4ff" font-weight="700">QNH</text>
+        <text x="156" y="105" font-size="9" fill="#6a85a8">→AMSL</text>
+        <rect x="20" y="98" width="28" height="5" fill="#6a85a8" opacity=".6"/>
+        <text x="50" y="26" text-anchor="middle" font-size="14" fill="#c0d4f0">✈</text>
+        <line x1="50" y1="30" x2="50" y2="96" stroke="#3dffa0" stroke-width="2" marker-end="url(#aqfe)" stroke-dasharray="4 3"/>
+        <text x="58" y="66" font-size="10" fill="#3dffa0" font-weight="700">QFE</text>
+        <text x="58" y="78" font-size="9" fill="#6a85a8">→AGL</text>
+      </svg>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.8">
+        <div style="margin-bottom:8px"><span style="color:var(--ac);font-weight:700">QNH</span> → AMSL. Standard im Flug. Von ATIS/Tower bekommen. Readback-Pflicht!</div>
+        <div style="margin-bottom:8px"><span style="color:var(--ac3);font-weight:700">QFE</span> → 0 ft am Platz. In DE kaum verwendet.</div>
+        <div style="background:var(--s3);border-radius:5px;padding:8px;font-size:11px;border-left:3px solid var(--b2)">
+          <strong style="color:#fff">Grenze:</strong><br>
+          Unter 5000ft AMSL → QNH nächster kontroll. Platz<br>
+          Über 5000ft AMSL → 1013,2 hPa (Standarddruck)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: LUFTRAUM
+════════════════════════════════════════════ -->
+<div class="page" id="page-luftraum">
+  <div class="sec-title">Luftraumklassen Deutschland – Querschnitt</div>
+  <div class="full-row" style="margin-bottom:14px">
+    <svg viewBox="0 0 640 310" style="width:100%;max-width:640px;display:block">
+      <defs><pattern id="htch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#888780" stroke-width=".8" opacity=".35"/></pattern></defs>
+      <line x1="40" y1="38" x2="620" y2="38" stroke="#1c2535" stroke-width=".5" stroke-dasharray="4 4"/>
+      <line x1="40" y1="98" x2="620" y2="98" stroke="#1c2535" stroke-width=".5" stroke-dasharray="4 4"/>
+      <line x1="40" y1="165" x2="620" y2="165" stroke="#1c2535" stroke-width=".5" stroke-dasharray="4 4"/>
+      <line x1="40" y1="215" x2="620" y2="215" stroke="#1c2535" stroke-width=".5" stroke-dasharray="4 4"/>
+      <line x1="40" y1="262" x2="620" y2="262" stroke="#1c2535" stroke-width=".5" stroke-dasharray="4 4"/>
+      <text x="35" y="41" text-anchor="end" font-size="9" fill="#6a85a8" font-family="monospace">FL195</text>
+      <text x="35" y="101" text-anchor="end" font-size="9" fill="#6a85a8" font-family="monospace">FL100</text>
+      <text x="35" y="168" text-anchor="end" font-size="9" fill="#6a85a8" font-family="monospace">5000ft</text>
+      <text x="35" y="218" text-anchor="end" font-size="9" fill="#6a85a8" font-family="monospace">2500ft</text>
+      <text x="35" y="265" text-anchor="end" font-size="9" fill="#6a85a8" font-family="monospace">1000ft</text>
+      <!-- C -->
+      <rect x="42" y="38" width="576" height="60" fill="#72243E" opacity=".18"/>
+      <rect x="42" y="38" width="576" height="60" fill="none" stroke="#72243E" stroke-width="1" opacity=".5"/>
+      <text x="330" y="64" text-anchor="middle" font-size="12" fill="#ED93B1" font-weight="700">C</text>
+      <text x="330" y="78" text-anchor="middle" font-size="10" fill="#ED93B1">FL100–FL195 · Freigabe · nur Englisch · Transponder Pflicht</text>
+      <!-- E rechts/links -->
+      <rect x="42" y="98" width="148" height="164" fill="#0C447C" opacity=".17"/>
+      <rect x="450" y="98" width="168" height="164" fill="#0C447C" opacity=".17"/>
+      <text x="116" y="186" text-anchor="middle" font-size="13" fill="#85B7EB" font-weight="700">E</text>
+      <text x="116" y="200" text-anchor="middle" font-size="10" fill="#85B7EB">kontrolliert</text>
+      <text x="116" y="212" text-anchor="middle" font-size="9" fill="#85B7EB">VFR ohne Freig.</text>
+      <text x="534" y="186" text-anchor="middle" font-size="13" fill="#85B7EB" font-weight="700">E</text>
+      <!-- G rechts/links -->
+      <rect x="42" y="262" width="148" height="38" fill="url(#htch)" opacity=".7"/>
+      <rect x="42" y="262" width="148" height="38" fill="#888780" opacity=".06"/>
+      <rect x="450" y="262" width="168" height="38" fill="url(#htch)" opacity=".7"/>
+      <rect x="450" y="262" width="168" height="38" fill="#888780" opacity=".06"/>
+      <text x="116" y="284" text-anchor="middle" font-size="11" fill="#B4B2A9" font-weight="700">G</text>
+      <text x="116" y="295" text-anchor="middle" font-size="9" fill="#888780">unkontrolliert</text>
+      <text x="534" y="284" text-anchor="middle" font-size="11" fill="#B4B2A9" font-weight="700">G</text>
+      <!-- TMA -->
+      <polygon points="190,98 450,98 400,215 240,215" fill="#993556" opacity=".13"/>
+      <polygon points="190,98 450,98 400,215 240,215" fill="none" stroke="#993556" stroke-width="1" stroke-dasharray="5 3" opacity=".65"/>
+      <text x="320" y="148" text-anchor="middle" font-size="11" fill="#ED93B1" font-weight="700">TMA</text>
+      <text x="320" y="161" text-anchor="middle" font-size="9" fill="#ED93B1">Klasse C/E</text>
+      <!-- CTR -->
+      <rect x="240" y="215" width="160" height="85" fill="#BA7517" opacity=".2"/>
+      <rect x="240" y="215" width="160" height="85" fill="none" stroke="#BA7517" stroke-width="1.5"/>
+      <text x="320" y="250" text-anchor="middle" font-size="12" fill="#FAC775" font-weight="700">CTR</text>
+      <text x="320" y="263" text-anchor="middle" font-size="10" fill="#FAC775">Klasse D · Freigabe!</text>
+      <line x1="240" y1="300" x2="400" y2="300" stroke="#BA7517" stroke-width="2"/>
+      <rect x="280" y="291" width="80" height="6" rx="1" fill="#BA7517" opacity=".5"/>
+      <!-- RMZ -->
+      <rect x="42" y="285" width="72" height="15" fill="#27500A" opacity=".3"/>
+      <rect x="42" y="285" width="72" height="15" fill="none" stroke="#3dffa0" stroke-width=".8" stroke-dasharray="3 2" opacity=".7"/>
+      <text x="78" y="296" text-anchor="middle" font-size="9" fill="#3dffa0">RMZ 1000ft</text>
+      <!-- TMZ -->
+      <rect x="526" y="285" width="72" height="15" fill="#3C3489" opacity=".25"/>
+      <rect x="526" y="285" width="72" height="15" fill="none" stroke="#c084fc" stroke-width=".8" stroke-dasharray="3 2" opacity=".7"/>
+      <text x="562" y="296" text-anchor="middle" font-size="9" fill="#c084fc">TMZ</text>
+      <!-- markers -->
+      <text x="614" y="95" text-anchor="end" font-size="9" fill="#ff6b35">← nur Englisch</text>
+      <text x="614" y="162" text-anchor="end" font-size="9" fill="#c084fc">← Xpdr 7000</text>
+    </svg>
+  </div>
+
+  <div class="lr-cards" id="lr-cards"></div>
+
+  <div class="full-row">
+    <div class="z-title">TRANSPONDER-NOTCODES</div>
+    <div class="xpdr-grid">
+      <div class="xpdr-card" style="border-left:3px solid var(--danger)"><div class="xpdr-code" style="color:var(--danger)">7700</div><div class="xpdr-label">Notfall (MAYDAY)</div></div>
+      <div class="xpdr-card" style="border-left:3px solid var(--ac2)"><div class="xpdr-code" style="color:var(--ac2)">7600</div><div class="xpdr-label">Funkausfall (NORDO)</div></div>
+      <div class="xpdr-card" style="border-left:3px solid var(--warn)"><div class="xpdr-code" style="color:var(--warn)">7500</div><div class="xpdr-label">Entführung (Hijack)</div></div>
+      <div class="xpdr-card" style="border-left:3px solid var(--ac3)"><div class="xpdr-code" style="color:var(--ac3)">7000</div><div class="xpdr-label">VFR Standard (Europa)</div></div>
+      <div class="xpdr-card" style="border-left:3px solid var(--ac)"><div class="xpdr-code" style="color:var(--ac)">2000</div><div class="xpdr-label">IFR Standard</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: ZAHLENREGELN
+════════════════════════════════════════════ -->
+<div class="page" id="page-zahlen">
+  <div class="sec-title">Readback-Pflicht (SERA.8015 · DFS 2024)</div>
+  <div class="rb-grid" style="margin-bottom:14px">
+    <div class="rb-card">
+      <div class="rb-tag tag-must">MUSS zurücklesen</div>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.9">
+        ▸ Streckenfreigaben<br>▸ Start-/Landefreigabe<br>▸ Rollanweisungen auf Pisten<br>▸ Betriebspiste (Runway)<br>▸ QNH / QFE<br>▸ SSR-Code (Squawk)<br>▸ Neuer Funkkanal (Frequenz)<br>▸ Höhenanweisungen<br>▸ Kursanweisungen<br>▸ Geschwindigkeitsanweisungen<br>▸ Übergangsflächen (auch aus ATIS)
+      </div>
+    </div>
+    <div class="rb-card">
+      <div class="rb-tag tag-should">SOLLTE bestätigen</div>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.9">
+        ▸ Andere Freigaben<br>▸ Konditionelle Freigaben<br>▸ Rollanweisungen (allgemein)<br>▸ Verkehrshinweise
+      </div>
+    </div>
+    <div class="rb-card">
+      <div class="rb-tag tag-no">Nicht zwingend</div>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.9">
+        ▸ Wettermeldungen<br>▸ Allgemeine Hinweise<br>▸ CPDLC-Mitteilungen<br>▸ Baustelleninfos
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title">Zahlenübermittlung – Regeln (SERA.14035)</div>
+  <div class="z-block">
+    <table class="z-table">
+      <thead><tr><th>Was</th><th>Regel</th><th>Beispiel Deutsch</th><th>Beispiel Englisch</th></tr></thead>
+      <tbody>
+        <tr><td style="color:#fff;font-weight:500">Rufzeichen, Steuerkurse, Pisten, Wind</td><td style="color:var(--tx2)">Jede Ziffer <strong style="color:#fff">einzeln</strong></td><td class="mono-ex">Piste 27 → PISTE ZWO SIEBEN<br>Kurs 080° → NULL ACHT NULL<br>Wind 200/70 → ZWO NULL NULL GRAD SIEBEN NULL KNOTEN</td><td class="mono-ex">RUNWAY TWO SEVEN<br>HEADING ZERO EIGHT ZERO<br>WIND TWO ZERO ZERO DEGREES SEVEN ZERO KNOTS</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Flugflächen (FL)</td><td style="color:var(--tx2)">Einzeln – außer ganze Hunderter</td><td class="mono-ex">FL 180 → EINS ACHT NULL<br>FL 200 → ZWO HUNDERT</td><td class="mono-ex">FL ONE EIGHT ZERO<br>FL TWO HUNDRED</td></tr>
+        <tr><td style="color:#fff;font-weight:500">QNH / hPa</td><td style="color:var(--tx2)">Einzeln – Ausnahme: 1000 = "EIN TAUSEND"</td><td class="mono-ex">1009 → EINS NULL NULL NEUN<br>1000 → EIN TAUSEND<br>993 → NEUN NEUN DREI</td><td class="mono-ex">ONE ZERO ZERO NINER<br>ONE THOUSAND<br>NINER NINER THREE</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Höhen / Sicht / Wolken</td><td style="color:var(--tx2)">Hunderter → HUNDERT, Tausender → TAUSEND</td><td class="mono-ex">800ft → ACHT HUNDERT<br>3400ft → DREI TAUSEND VIER HUNDERT<br>Sicht 1000m → SICHT EIN TAUSEND</td><td class="mono-ex">EIGHT HUNDRED<br>THREE THOUSAND FOUR HUNDRED<br>VISIBILITY ONE THOUSAND</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Squawk-Codes</td><td style="color:var(--tx2)">Einzeln – ganze Tausender als TAUSEND</td><td class="mono-ex">2341 → ZWO DREI VIER EINS<br>2000 → ZWO TAUSEND</td><td class="mono-ex">TWO THREE FOUR ONE<br>TWO THOUSAND</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Frequenzen (MHz)</td><td style="color:var(--tx2)">6 Stellen mit KOMMA. Wenn 5.+6. = 00 → nur 4</td><td class="mono-ex">118.000 → EINS EINS ACHT KOMMA NULL<br>120.275 → EINS ZWO NULL KOMMA ZWO SIEBEN FÜNF</td><td class="mono-ex">ONE ONE EIGHT DECIMAL ZERO<br>ONE TWO ZERO DECIMAL TWO SEVEN FIVE</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Zeit (UTC!)</td><td style="color:var(--tx2)">4 Ziffern einzeln. Wenn klar: 2-stellig (Minuten)</td><td class="mono-ex">1318 → EINS DREI EINS ACHT<br>Wenn klar: ACHTZEHN</td><td class="mono-ex">TIME ONE THREE ONE EIGHT<br>EIGHTEEN (minutes)</td></tr>
+        <tr><td style="color:#fff;font-weight:500">Verkehrsrichtung (Uhrzeiger)</td><td style="color:var(--tx2)">Ziffern zusammen</td><td class="mono-ex">10 Uhr → ZEHN UHR<br>2 Uhr → ZWEI UHR</td><td class="mono-ex">TEN O'CLOCK<br>TWO O'CLOCK</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec-title">Einheiten im Überblick</div>
+  <div class="z-block">
+    <table class="z-table">
+      <thead><tr><th>Größe</th><th>Einheit</th><th>Hinweis</th></tr></thead>
+      <tbody>
+        <tr><td style="color:#fff">Höhe</td><td class="mono-ex">Fuß (ft)</td><td style="color:var(--tx2)">ICAO-Standard weltweit</td></tr>
+        <tr><td style="color:#fff">Horizontale Geschwindigkeit</td><td class="mono-ex">Knoten (kt)</td><td style="color:var(--tx2)">1 kt = 1 NM/h</td></tr>
+        <tr><td style="color:#fff">Vertikale Geschwindigkeit</td><td class="mono-ex">ft/min</td><td style="color:var(--tx2)">Steig-/Sinkrate</td></tr>
+        <tr><td style="color:#fff">Entfernung (Navigation)</td><td class="mono-ex">Seemeile (NM)</td><td style="color:var(--tx2)">1 NM = 1 Bogenminute Meridian = 1,852 km</td></tr>
+        <tr><td style="color:#fff">Sicht &lt; 5 km</td><td class="mono-ex">Meter (m)</td><td style="color:var(--tx2)">DFS-Regel: unter 5 km in Metern</td></tr>
+        <tr><td style="color:#fff">Sicht ≥ 5 km</td><td class="mono-ex">Kilometer (km)</td><td style="color:var(--tx2)">DFS-Regel</td></tr>
+        <tr><td style="color:#fff">Luftdruck</td><td class="mono-ex">hPa</td><td style="color:var(--tx2)">Europa-Standard (= Millibar)</td></tr>
+        <tr><td style="color:#fff">Windrichtung</td><td class="mono-ex">° magnetisch, 3-stellig</td><td style="color:var(--tx2)">Immer missweisend</td></tr>
+        <tr><td style="color:#fff">Zeit</td><td class="mono-ex">UTC</td><td style="color:var(--tx2)">Keine Lokal-/Sommerzeit im Funk!</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec-title">Verständlichkeitsskala</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:14px">
+    <div class="z-block" style="border-left:3px solid var(--danger);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--danger)">1/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Unverständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--danger)">HÖRE SIE EINS</div></div>
+    <div class="z-block" style="border-left:3px solid var(--ac2);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--ac2)">2/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Zeitweise verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--ac2)">HÖRE SIE ZWO</div></div>
+    <div class="z-block" style="border-left:3px solid var(--warn);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--warn)">3/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Schwer verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--warn)">HÖRE SIE DREI</div></div>
+    <div class="z-block" style="border-left:3px solid var(--ac3);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--ac3)">4/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--ac3)">HÖRE SIE VIER</div></div>
+    <div class="z-block" style="border-left:3px solid var(--ac);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--ac)">5/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Sehr gut verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--ac)">HÖRE SIE FÜNF</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: QUIZ
+════════════════════════════════════════════ -->
+<div class="page" id="page-quiz">
+  <div id="quiz-wrap">
+    <div class="quiz-header">
+      <div class="quiz-stats">
+        <div class="qstat"><div class="qstat-val" id="qs-mastered">0</div><div class="qstat-lbl">Gemeistert</div></div>
+        <div class="qstat"><div class="qstat-val" id="qs-remain">261</div><div class="qstat-lbl">Verbleibend</div></div>
+        <div class="qstat"><div class="qstat-val" id="qs-streak">0</div><div class="qstat-lbl">Serie</div></div>
+        <div class="qstat"><div class="qstat-val" id="qs-correct">0</div><div class="qstat-lbl">Richtig</div></div>
+        <div class="qstat"><div class="qstat-val" id="qs-pct">—</div><div class="qstat-lbl">Quote</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="progress-label"><span id="prog-text">0 / 261 gemeistert</span><span id="prog-pct">0%</span></div>
+    </div>
+
+    <div class="quiz-filters" id="quiz-filters">
+      <button class="qf-btn on" onclick="setQFilter('all',this)">Alle (261)</button>
+      <button class="qf-btn" onclick="setQFilter('rechtlich',this)">Rechtliches</button>
+      <button class="qf-btn" onclick="setQFilter('betrieb',this)">Betrieb</button>
+      <button class="qf-btn" onclick="setQFilter('notfall',this)">Notfall</button>
+      <button class="qf-btn" onclick="setQFilter('luftraum',this)">Luftraum</button>
+      <button class="qf-btn" onclick="setQFilter('nav',this)">Navigation</button>
+      <button class="qf-btn" onclick="setQFilter('technik',this)">Technik</button>
+    </div>
+
+    <div id="q-area">
+      <div class="q-card" id="q-card">
+        <div class="q-head">
+          <span class="q-num" id="q-num">Frage 1</span>
+          <div class="q-dots"><div class="qdot" id="d0"></div><div class="qdot" id="d1"></div><div class="qdot" id="d2"></div></div>
+        </div>
+        <div class="q-text" id="q-text"></div>
+        <div class="q-opts" id="q-opts"></div>
+        <div class="q-fb" id="q-fb"></div>
+        <button class="q-next" id="q-next" onclick="nextQ()">Weiter →</button>
+      </div>
+    </div>
+    <div class="q-done" id="q-done">
+      <div style="font-size:48px">🏆</div>
+      <h2>Alle Fragen gemeistert!</h2>
+      <p>Du hast alle Fragen 3× korrekt beantwortet. Bereit für die BZF-Prüfung!</p>
+      <button class="btn-restart" onclick="restartQuiz()">Nochmal von vorne</button>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+const ABBREVS=[
+{a:'ASI',f:'Airspeed Indicator',cat:'inst',d:'Fahrtmesser – zeigt IAS in Knoten'},
+{a:'ALT',f:'Altimeter',cat:'inst',d:'Höhenmesser – zeigt Höhe in ft'},
+{a:'VSI',f:'Vertical Speed Indicator',cat:'inst',d:'Variometer – Steig-/Sinkrate in ft/min'},
+{a:'AI',f:'Attitude Indicator',cat:'inst',d:'Künstlicher Horizont – Pitch und Roll-Lage'},
+{a:'DI/HI',f:'Directional/Heading Indicator',cat:'inst',d:'Kurskreisel – regelmäßig mit Kompass abgleichen'},
+{a:'TC',f:'Turn Coordinator',cat:'inst',d:'Wendezeiger + Kugel (Slip/Skid)'},
+{a:'EFIS',f:'Electronic Flight Instrument System',cat:'inst',d:'Glasscockpit – ersetzt analoge Six Pack'},
+{a:'PFD',f:'Primary Flight Display',cat:'inst',d:'Hauptfluganzeige im Glasscockpit'},
+{a:'MFD',f:'Multi-Function Display',cat:'inst',d:'Zusatzbildschirm für Karte, Motor, Traffic'},
+{a:'EGT',f:'Exhaust Gas Temperature',cat:'eng',d:'Abgastemperatur – Hilfe beim Leanen'},
+{a:'CHT',f:'Cylinder Head Temperature',cat:'eng',d:'Zylindertemperatur – Überhitzungsschutz; normal 150–230°C'},
+{a:'MAP',f:'Manifold Absolute Pressure',cat:'eng',d:'Ladedruck in inHg – nur bei Verstellpropeller'},
+{a:'RPM',f:'Revolutions Per Minute',cat:'eng',d:'Motordrehzahl'},
+{a:'VOR',f:'VHF Omnidirectional Range',cat:'nav',d:'Bodengebundenes Navigationssystem; gibt Radiallinie (QDR)'},
+{a:'DME',f:'Distance Measuring Equipment',cat:'nav',d:'Entfernungsmessung zur Bodenstation in NM'},
+{a:'NDB',f:'Non-Directional Beacon',cat:'nav',d:'Älteres Navigationssystem; ADF-Zeiger zeigt zur Station'},
+{a:'GPS',f:'Global Positioning System',cat:'nav',d:'Satellitennavigation USA'},
+{a:'GNSS',f:'Global Navigation Satellite System',cat:'nav',d:'Oberbegriff: GPS, GALILEO, GLONASS'},
+{a:'NM',f:'Nautical Mile / Seemeile',cat:'nav',d:'1 NM = 1,852 km = 1 Bogenminute auf dem Meridian'},
+{a:'HDG',f:'Heading',cat:'nav',d:'Steuerkurs in Grad (0–360°)'},
+{a:'TAS',f:'True Airspeed',cat:'nav',d:'Wahre Eigengeschwindigkeit – korrigiert für Höhe+Temperatur'},
+{a:'IAS',f:'Indicated Airspeed',cat:'nav',d:'Angezeigte Geschwindigkeit am ASI'},
+{a:'GS',f:'Ground Speed',cat:'nav',d:'Geschwindigkeit über Grund – IAS ± Wind'},
+{a:'ETA',f:'Estimated Time of Arrival',cat:'nav',d:'Voraussichtliche Ankunftszeit (UTC!)'},
+{a:'ADF',f:'Automatic Direction Finder',cat:'nav',d:'Bordseitiger Funkkompass für NDB'},
+{a:'RBI',f:'Radio Bearing Indicator',cat:'nav',d:'Anzeige des ADF – Winkel zwischen Nase und NDB'},
+{a:'VDF',f:'VHF Direction Finding',cat:'nav',d:'UKW-Peilstelle – liefert QDM/QDR/QTE per Funk'},
+{a:'ATC',f:'Air Traffic Control',cat:'atc',d:'Flugsicherung / Fluglotse'},
+{a:'ACC',f:'Area Control Centre',cat:'atc',d:'Bezirkskontrollstelle – zuständig für Streckenflug'},
+{a:'CTR',f:'Control Zone',cat:'atc',d:'Kontrollzone um einen kontrollierten Flugplatz (Klasse D in DE)'},
+{a:'TMA',f:'Terminal Maneuvering Area',cat:'atc',d:'Terminalbereich über CTR – schützt IFR-Anflüge'},
+{a:'FIR',f:'Flight Information Region',cat:'atc',d:'Fluginformationsgebiet. Deutschland: Bremen, Langen, München'},
+{a:'AFIS',f:'Aerodrome Flight Information Service',cat:'atc',d:'Fluginformationsdienst unkontrollierter Plätze (Rufzeichen: RADIO)'},
+{a:'ATIS',f:'Automatic Terminal Information Service',cat:'atc',d:'Automatisch gesendete Wetter-/Platzinfo; Buchstabe A–Z. Vor Erstkontakt abhören!'},
+{a:'FIS',f:'Flight Information Service',cat:'atc',d:'Fluginformationsdienst – gibt Infos, keine Freigaben'},
+{a:'RMZ',f:'Radio Mandatory Zone',cat:'atc',d:'Funkkommunikationspflicht (keine Freigabe nötig). Boden–1000ft AGL'},
+{a:'TMZ',f:'Transponder Mandatory Zone',cat:'atc',d:'Transponder Mode C/S Pflicht. Veröffentlichten Code senden'},
+{a:'VFR',f:'Visual Flight Rules',cat:'atc',d:'Sichtflugregeln'},
+{a:'IFR',f:'Instrument Flight Rules',cat:'atc',d:'Instrumentenflugregeln'},
+{a:'VMC',f:'Visual Meteorological Conditions',cat:'atc',d:'Sichtwetterbedingungen – VFR möglich'},
+{a:'IMC',f:'Instrument Meteorological Conditions',cat:'atc',d:'Instrumentenwetterbedingungen – VFR nicht möglich'},
+{a:'FL',f:'Flight Level',cat:'atc',d:'Flugfläche; FL100=10.000ft bei 1013,2hPa'},
+{a:'QNH',f:'Altimeter Setting (AMSL)',cat:'atc',d:'Höhenmessereinstellung → zeigt AMSL. Readback-Pflicht!'},
+{a:'QFE',f:'Altimeter Setting (Aerodrome)',cat:'atc',d:'Höhenmessereinstellung → zeigt 0ft am Platz. In DE selten'},
+{a:'QDM',f:'Magnetic Bearing TO Station',cat:'atc',d:'Missweisender Kurs zur Station. M=zu Mir. QDM=QDR±180°'},
+{a:'QDR',f:'Magnetic Bearing FROM Station',cat:'atc',d:'Missweisende Peilung von der Station = VOR-Radial'},
+{a:'QTE',f:'True Bearing FROM Station',cat:'atc',d:'Rechtweisende Peilung von der Station (geografisch)'},
+{a:'AMSL',f:'Above Mean Sea Level',cat:'atc',d:'Höhe über Meeresspiegel – was QNH anzeigt'},
+{a:'AGL',f:'Above Ground Level',cat:'atc',d:'Höhe über Grund direkt unter dem Flugzeug'},
+{a:'SSR',f:'Secondary Surveillance Radar',cat:'atc',d:'Sekundärradar – identifiziert Flugzeuge per Transponder'},
+{a:'RAFIS',f:'Radar Assisted Flight Information Service',cat:'atc',d:'Radargestützter Fluginformationsdienst (militärische OAT-VFR)'},
+{a:'METAR',f:'Meteorological Aerodrome Report',cat:'wx',d:'Aktueller Wetterbericht eines Platzes (stündlich)'},
+{a:'TAF',f:'Terminal Aerodrome Forecast',cat:'wx',d:'Wettervorhersage für einen Flughafen (9–24h)'},
+{a:'SIGMET',f:'Significant Meteorological Information',cat:'wx',d:'Warnung vor Gewitter, Turbulenz, Vereisung'},
+{a:'VOLMET',f:'Volume Meteorological',cat:'wx',d:'Wetterrundsendungen für Flughafenwettermeldungen'},
+{a:'CAVOK',f:'Ceiling And Visibility OK',cat:'wx',d:'Sicht≥10km, keine Wolken unter 5000ft AGL, kein signif. Wetter'},
+{a:'CB',f:'Cumulonimbus',cat:'wx',d:'Gewitterwolke – IMMER umfliegen!'},
+{a:'OVC',f:'Overcast',cat:'wx',d:'Bedeckt – 8/8 Wolkenbedeckung'},
+{a:'BKN',f:'Broken',cat:'wx',d:'5–7/8 Wolkenbedeckung'},
+{a:'SCT',f:'Scattered',cat:'wx',d:'3–4/8 Wolkenbedeckung'},
+{a:'FEW',f:'Few',cat:'wx',d:'1–2/8 Wolkenbedeckung'},
+{a:'TS',f:'Thunderstorm',cat:'wx',d:'Gewitter im METAR/TAF'},
+{a:'FG',f:'Fog',cat:'wx',d:'Nebel (Sicht unter 1000m)'},
+{a:'BR',f:'Mist',cat:'wx',d:'Dunst (Sicht 1000–5000m)'},
+{a:'RA',f:'Rain',cat:'wx',d:'Regen im METAR'},
+{a:'SN',f:'Snow',cat:'wx',d:'Schnee im METAR'},
+{a:'TEMPO',f:'Temporary',cat:'wx',d:'Vorübergehende Verschlechterung im TAF (unter 60 Min.)'},
+{a:'BECMG',f:'Becoming',cat:'wx',d:'Dauerhafter Wetterwechsel im TAF'},
+{a:'ISA',f:'International Standard Atmosphere',cat:'wx',d:'15°C und 1013,25hPa auf MSL; −2°C/1000ft'},
+{a:'PPL(A)',f:'Private Pilot Licence (Aeroplane)',cat:'lic',d:'Privatpilotenlizenz EASA – VFR weltweit, IFR mit IR-Rating'},
+{a:'LAPL(A)',f:'Light Aircraft Pilot Licence (Aeroplane)',cat:'lic',d:'Eingeschränkte Privatlizenz – max. 2000kg, 3 Passagiere'},
+{a:'BZF I',f:'Beschränkt Gültiges Sprechfunkzeugnis I',cat:'lic',d:'Funk auf Deutsch + Englisch nach VFR. Pflicht für PPL(A).'},
+{a:'BZF II',f:'Beschränkt Gültiges Sprechfunkzeugnis II',cat:'lic',d:'Funk nur Deutsch nach VFR. Ausreichend für LAPL.'},
+{a:'AZF',f:'Allgemeines Sprechfunkzeugnis',cat:'lic',d:'Nächste Stufe nach BZF I – für IFR und uneingeschränkten Funk'},
+{a:'EASA',f:'European Union Aviation Safety Agency',cat:'lic',d:'Europäische Luftfahrtbehörde – gibt PPL/LAPL aus'},
+{a:'ICAO',f:'International Civil Aviation Organization',cat:'lic',d:'UN-Organisation für internationale Zivilluftfahrt (Montreal)'},
+{a:'ITU',f:'International Telecommunication Union',cat:'lic',d:'Internationale Fernmeldeunion – regelt weltweiten Funkdienst'},
+{a:'AIP',f:'Aeronautical Information Publication',cat:'gen',d:'Luftfahrthandbuch – offizielle Veröffentlichung aller Luftfahrtinfos'},
+{a:'POH',f:"Pilot's Operating Handbook",cat:'gen',d:'Flughandbuch – bindend für alle Verfahren des jeweiligen Flugzeugs'},
+{a:'NOTAMs',f:'Notices to Air Missions',cat:'gen',d:'Aktuelle Luftfahrtbekanntmachungen – VOR jedem Flug prüfen!'},
+{a:'UTC',f:'Coordinated Universal Time',cat:'gen',d:'Koordinierte Weltzeit – IMMER im Funk. Nie Lokal-/Sommerzeit!'},
+{a:'SAR',f:'Search and Rescue',cat:'gen',d:'Such- und Rettungsdienst'},
+{a:'H24',f:'24-Hour Operation',cat:'gen',d:'Ununterbrochener Betrieb bei Tag und Nacht'},
+{a:'HJ',f:'Sunrise to Sunset',cat:'gen',d:'Betrieb von Sonnenaufgang bis Sonnenuntergang'},
+{a:'HX',f:'No Fixed Hours',cat:'gen',d:'Keine festgelegte Betriebszeit'},
+{a:'AVGAS',f:'Aviation Gasoline 100LL',cat:'gen',d:'Bleihaltig (blau) – Standard für Kolbenmotoren'},
+{a:'MTOM',f:'Maximum Take-Off Mass',cat:'gen',d:'Maximales Abfluggewicht'},
+{a:'SID',f:'Standard Instrument Departure',cat:'nav',d:'Standard-Abflugroute (IFR) – für PPL mit IR später relevant'},
+{a:'STAR',f:'Standard Terminal Arrival Route',cat:'nav',d:'Standard-Anflugroute (IFR) – für PPL mit IR später relevant'},
+];
+
+const PHONETIC=[
+{l:'A',w:'Alfa',p:'AL-fah'},{l:'B',w:'Bravo',p:'BRAH-voh'},{l:'C',w:'Charlie',p:'CHAR-lee'},
+{l:'D',w:'Delta',p:'DEL-tah'},{l:'E',w:'Echo',p:'EK-oh'},{l:'F',w:'Foxtrot',p:'FOKS-trot'},
+{l:'G',w:'Golf',p:'GOLF'},{l:'H',w:'Hotel',p:'hoh-TEL'},{l:'I',w:'India',p:'IN-dee-ah'},
+{l:'J',w:'Juliett',p:'JEW-lee-ETT'},{l:'K',w:'Kilo',p:'KEY-loh'},{l:'L',w:'Lima',p:'LEE-mah'},
+{l:'M',w:'Mike',p:'MIKE'},{l:'N',w:'November',p:'no-VEM-ber'},{l:'O',w:'Oscar',p:'OSS-car'},
+{l:'P',w:'Papa',p:'pah-PAH'},{l:'Q',w:'Quebec',p:'keh-BEK'},{l:'R',w:'Romeo',p:'ROW-me-oh'},
+{l:'S',w:'Sierra',p:'see-AIR-rah'},{l:'T',w:'Tango',p:'TANG-go'},{l:'U',w:'Uniform',p:'YOU-nee-form'},
+{l:'V',w:'Victor',p:'VIK-tah'},{l:'W',w:'Whiskey',p:'WISS-key'},{l:'X',w:'X-ray',p:'EKS-ray'},
+{l:'Y',w:'Yankee',p:'YANG-key'},{l:'Z',w:'Zulu',p:'ZOO-loo'},
+];
+
+const PHRASES=[
+{en:'MAYDAY MAYDAY MAYDAY',de:'Notruf (3x) – unmittelbare Lebensgefahr',ctx:'Transponder 7700. Auf aktueller Frequenz oder 121,5 MHz. Danach: Art der Not + Position + Hoehe + Personen an Bord'},
+{en:'PAN PAN PAN PAN PAN PAN',de:'Dringlichkeitsruf (3x) – nicht unmittelbar lebensbedrohlich',ctx:'Technisches Problem, medizinisch, verloren. PAN PAN MEDICAL fuer medizinische Notfaelle'},
+{en:'Roger / Verstanden',de:'Letzte Meldung vollstaendig erhalten',ctx:'Nur Empfangsbestaetigung – KEINE Zustimmung!'},
+{en:'Wilco / Wird ausgefuehrt',de:'Verstanden UND werde handeln (Will Comply)',ctx:'Staerker als Roger – kuendigt Ausfuehrung an'},
+{en:'Affirm / Positiv',de:'Ja / Korrekt',ctx:'NIE "Yes" im Funk'},
+{en:'Negative / Negativ',de:'Nein / Nicht erlaubt / Falsch',ctx:'NIE "No" im Funk'},
+{en:'Say again / Wiederholen Sie',de:'Bitte wiederholen',ctx:'NIE "Repeat" – bedeutet militaerisch: noochmals schiessen'},
+{en:'Standby / Standby',de:'Warte – ich rufe zurueck',ctx:'Kein "OK" oder "Moment bitte"'},
+{en:'Unable / Nicht moeglich',de:'Kann Anfrage/Anweisung nicht erfuellen',ctx:'Wenn ATC-Anweisung nicht ausfuehrbar ist'},
+{en:'Confirm / Bestaetigen Sie',de:'Bitte bestaetigen Sie ...',ctx:'Fuer Verifizierung einer Information'},
+{en:'Correction / Berichtigung',de:'Fehler in letzter Aussage – richtig ist ...',ctx:'QNH 1013 BERICHTIGUNG QNH 1003'},
+{en:'Cleared / Frei',de:'Freigegeben unter festgelegten Bedingungen',ctx:'NUR ATC darf cleared verwenden'},
+{en:'Report / Melden Sie',de:'Gib mir folgende Information',ctx:'Report final = melde dich im Endanflug'},
+{en:'Request / Erbitte',de:'Anfrage / beantrage ...',ctx:'Request CTR transit'},
+{en:'Contact / Rufen Sie',de:'Stellen Sie Funkverbindung her mit ...',ctx:'Contact Munich Radar 127.975'},
+{en:'Monitor / Monitor',de:'Hoeren Sie Frequenz ab (ohne zu senden)',ctx:'Passive Hoerbereitschaft'},
+{en:'Squawk [Code]',de:'Transponder auf diesen Code einstellen',ctx:'Squawk 2341 → 4-stellig einstellen + zuruecklesen'},
+{en:'Go around / Starten Sie durch',de:'Sofort Durchstarten',ctx:'Pilot: Going around. Sofort Vollgas, positiver Steigflug'},
+{en:'Hold position / Halten Sie Position',de:'Sofort stoppen – nicht bewegen',ctx:'Am Boden: NIE auf die Piste rollen! Bestaetigung: Halte Position'},
+{en:'Line up and wait / Piste befahren und warten',de:'Auf Piste aufstellen – NOCH KEINE Startfreigabe',ctx:'Nicht mit Cleared for take-off verwechseln!'},
+{en:'Cleared for take-off / Start frei',de:'Startfreigabe – jetzt starten',ctx:'Readback: Runway 07, cleared for take-off, D-EABC'},
+{en:'Cleared to land / Landung frei',de:'Landefreigabe',ctx:'Readback: Cleared to land runway 26, D-EABC'},
+{en:'Traffic in sight',de:'Gemeldeten Verkehr gesehen',ctx:'Antwort auf Traffic-Meldung. Wenn nicht gesehen: Traffic not in sight'},
+{en:'Caution wake turbulence',de:'Warnung vor Wirbelschleppe eines schweren Flugzeugs',ctx:'Pilot antwortet: Roger, wilco'},
+{en:'Words twice / Worte doppelt',de:'Jedes Wort zweimal senden – schlechte Verbindung',ctx:'CLIMB – CLIMB – FLIGHT LEVEL – FLIGHT LEVEL – NINER ZERO – NINER ZERO'},
+{en:'Read back / Lesen Sie zurueck',de:'Alles oder bezeichneten Teil woertlich wiederholen',ctx:'ATC fordert explizit vollstaendiges Readback'},
+{en:'Acknowledge / Bestaetigen Sie',de:'Teile mit dass Meldung empfangen und verstanden',ctx:'ATC fordert Empfangsbestaetigung'},
+{en:'I say again / Ich wiederhole',de:'Zur Klarstellung oder Betonung wiederhole ich',ctx:'Pilot/ATC wiederholt wichtige Info von sich aus'},
+{en:'Disregard / Ignorieren Sie',de:'Betrachte diese Uebermittlung als nicht gesendet',ctx:'Vorige Aussage annullieren'},
+{en:'How do you read / Wie verstehen Sie mich',de:'Wie ist die Verstaendlichkeit?',ctx:'Antwort: Hoere Sie [1-5] / Read you [1-5]'},
+{en:'Maintain VMC',de:'Sichtwetterbedingungen beibehalten',ctx:'ATC weist Piloten an VMC-Bedingungen einzuhalten'},
+{en:'Squawk ident / Ident druecken',de:'Identifizierungsknopf am Transponder druecken',ctx:'Flugzeug erscheint aufgehellt auf dem Radarschirm'},
+{en:'Traffic not in sight',de:'Gemeldeten Verkehr nicht gesehen',ctx:'Wichtig: nicht verschweigen wenn du den Verkehr nicht siehst'},
+{en:'Radio check / Funkprobe',de:'Funkpruefung – wie ist meine Verstaendlichkeit?',ctx:'Format: [Bodenstelle], [Rufzeichen], RADIO CHECK [Frequenz]'},
+];
+
+const SCENARIOS=[
+{label:'1 · Abflug – Erstkontakt & Anlassen (DE)',lines:[
+{w:'PILOT',t:'Augsburg Tower, D-EABC.',tr:'Einleitungsanruf: Bodenfunkstelle zuerst, dann eigenes Rufzeichen'},
+{w:'ATC',t:'D-EABC, Augsburg Tower, kommen.',tr:'Aufforderung zum Sprechen'},
+{w:'PILOT',t:'D-EABC, Cessna 172, VFR nach Muenchen, Information Bravo, bitte Anlassen.',tr:'Typ · Ziel · ATIS-Buchstabe · Anfrage'},
+{w:'ATC',t:'D-EABC, QNH 1018, Anlassen genehmigt, rollen Sie zum Rollhalt Piste 07 ueber Alpha.',tr:''},
+{w:'PILOT',t:'QNH 1018, Rollhalt Piste 07 ueber Alpha, D-EABC.',tr:'Readback: QNH + Piste + Rollweg + Rufzeichen'},
+]},
+{label:'2 · Startfreigabe (DE)',lines:[
+{w:'PILOT',t:'D-EABC, Rollhalt Piste 07, abflugbereit.',tr:'Korrekt: ABFLUGBEREIT – nicht startbereit'},
+{w:'ATC',t:'D-EABC, Piste befahren und warten.',tr:'LINE UP AND WAIT – noch KEINE Startfreigabe!'},
+{w:'PILOT',t:'Piste befahren und warten, D-EABC.',tr:''},
+{w:'ATC',t:'D-EABC, Wind null sieben null Grad acht Knoten, Piste 07, Start frei.',tr:''},
+{w:'PILOT',t:'Piste null sieben, Start frei, D-EABC.',tr:'Readback: Piste + Start frei + Rufzeichen'},
+]},
+{label:'3 · Frequenzwechsel & Erstanruf (DE)',lines:[
+{w:'ATC',t:'D-EABC, rufen Sie Muenchen Radar eins zwo null Komma neun sieben fuenf, auf Wiedersehen.',tr:'Frequenz muss zurueckgelesen werden!'},
+{w:'PILOT',t:'Eins zwo null Komma neun sieben fuenf, D-EABC, auf Wiedersehen.',tr:''},
+{w:'PILOT',t:'Muenchen Radar, D-EABC, Cessna 172, durchfliegend zwo tausend Fuss, VFR, bitte Fluginformationsdienst.',tr:'Erstanruf: Dienststelle · Rufzeichen · Typ · Hoehe · VFR · Anfrage'},
+{w:'ATC',t:'D-EABC, Muenchen Radar, QNH 1016, Fluginformationsdienst.',tr:''},
+{w:'PILOT',t:'QNH 1016, D-EABC.',tr:''},
+]},
+{label:'4 · CTR-Einflug Kontrollzone D (DE)',lines:[
+{w:'PILOT',t:'Muenchen Tower, D-EABC, zehn Meilen noerdlich, drei tausend Fuss, VFR, Information Charlie, erbitte CTR-Transit.',tr:'5 Min. vor Pflichtmeldepunkt! Position + Hoehe + ATIS + Anfrage'},
+{w:'ATC',t:'D-EABC, Squawk zwei drei vier eins, melden Sie ueber Schleissheim.',tr:''},
+{w:'PILOT',t:'Squawk zwei drei vier eins, wilco, D-EABC.',tr:'Squawk-Code MUSS zurueckgelesen werden!'},
+{w:'PILOT',t:'D-EABC, ueber Schleissheim.',tr:'Pflichtmeldepunkt melden'},
+{w:'ATC',t:'D-EABC, CTR-Transit genehmigt, nicht ueber zwei tausend fuenf hundert Fuss, QNH 1018.',tr:''},
+{w:'PILOT',t:'CTR-Transit genehmigt, nicht ueber zwei tausend fuenf hundert Fuss, QNH 1018, D-EABC.',tr:'Readback: Freigabe + Hoehenbeschraenkung + QNH + Rufzeichen'},
+]},
+{label:'5 · Landung (DE)',lines:[
+{w:'PILOT',t:'D-EABC, fuenf Meilen Endanflug Piste zwei sechs, bitte Landefreigabe.',tr:''},
+{w:'ATC',t:'D-EABC, Erster, Wind zwei fuenf null Grad zwoelf Knoten, Piste zwei sechs, Landung frei.',tr:''},
+{w:'PILOT',t:'Landung frei, Piste zwei sechs, D-EABC.',tr:'Readback: Landung frei + Piste + Rufzeichen'},
+{w:'PILOT',t:'D-EABC, gelandet, verlasse Piste ueber Rollweg Bravo.',tr:'Nach Landung: Piste verlassen melden'},
+]},
+{label:'6 · MAYDAY – Motorausfall (DE)',lines:[
+{w:'PILOT',t:'MAYDAY MAYDAY MAYDAY, D-EABC, Motorausfall, Notlandung, fuenf Meilen noerdlich Augsburg, zwei tausend Fuss, eine Person an Bord, erbitte Hilfe.',tr:'MAYDAY 3x · Rufzeichen · Art der Not · Absicht · Position · Hoehe · Personen'},
+{w:'ATC',t:'D-EABC, MAYDAY bestaetigt, Squawk sieben sieben null null, bestaetigen Personen und Kraftstoff.',tr:''},
+{w:'PILOT',t:'Squawk sieben sieben null null, eine Person an Bord, Kraftstoff dreissig Minuten, D-EABC.',tr:'7700 + Personen + Kraftstoffreserve'},
+]},
+{label:'7 · Departure & Take-off (EN)',lines:[
+{w:'PILOT',t:'Augsburg Tower, D-EABC, Cessna 172, request start-up, VFR to Munich, information Bravo.',tr:''},
+{w:'ATC',t:'D-EABC, Augsburg Tower, QNH one zero one eight, start-up approved, taxi to holding point runway zero seven via Alpha.',tr:''},
+{w:'PILOT',t:'QNH one zero one eight, holding point runway zero seven via Alpha, D-EABC.',tr:''},
+{w:'PILOT',t:'D-EABC, holding point runway zero seven, ready for departure.',tr:''},
+{w:'ATC',t:'D-EABC, wind zero seven zero degrees eight knots, runway zero seven, cleared for take-off.',tr:''},
+{w:'PILOT',t:'Runway zero seven, cleared for take-off, D-EABC.',tr:''},
+]},
+{label:'8 · CTR Transit & Landing (EN)',lines:[
+{w:'PILOT',t:'Munich Tower, D-EABC, ten miles north, three thousand feet, VFR, information Charlie, request CTR transit.',tr:''},
+{w:'ATC',t:'D-EABC, squawk two three four one, report overhead Schleissheim.',tr:''},
+{w:'PILOT',t:'Squawk two three four one, wilco, D-EABC.',tr:''},
+{w:'PILOT',t:'D-EABC, overhead Schleissheim.',tr:''},
+{w:'ATC',t:'D-EABC, CTR transit approved, not above two thousand five hundred feet, QNH one zero one eight.',tr:''},
+{w:'PILOT',t:'CTR transit approved, not above two thousand five hundred feet, QNH one zero one eight, D-EABC.',tr:''},
+{w:'PILOT',t:'D-EABC, five miles final runway two six, request landing.',tr:''},
+{w:'ATC',t:'D-EABC, number one, wind two five zero degrees twelve knots, runway two six, cleared to land.',tr:''},
+{w:'PILOT',t:'Cleared to land, runway two six, D-EABC.',tr:''},
+]},
+];
+
+const NUMS=[
+{d:'0',w:'Null / Zero',p:'NULL / ZI-RO'},{d:'1',w:'Eins / One',p:'EINS / WUN'},
+{d:'2',w:'Zwo / Two',p:'ZWO / TOO'},{d:'3',w:'Drei / Tree',p:'DREI / TRI'},
+{d:'4',w:'Vier / Four',p:'VIER / FOW-ER'},{d:'5',w:'Fueneff / Fife',p:'FUENEFF / FEIF'},
+{d:'6',w:'Sechs / Six',p:'SECHS / SIX'},{d:'7',w:'Sieben / Seven',p:'SIEBEN / SEW-EN'},
+{d:'8',w:'Acht / Eight',p:'ACHT / AIT'},{d:'9',w:'Neun / Niner',p:'NEUN / NEIN-ER'},
+{d:'.',w:'Komma / Decimal',p:'KOMMA / DAY-SEE-MAL'},{d:'100',w:'Hundert / Hundred',p:'HUN-DRED'},
+{d:'1000',w:'Tausend / Thousand',p:'TAU-SEND'},
+];
+
+const SPEEDS=[
+{c:'Vs',n:'Stroemungsabriss (sauber)',en:'Stall Speed clean',v:'48 kt',col:'#ff4060',mark:'Roter Bogen unten',d:'Untergrenze normaler Betrieb'},
+{c:'Vs0',n:'Stroemungsabriss (Klappen)',en:'Stall Speed flaps full',v:'40 kt',col:'#ff4060',mark:'Roter Bogen absolut unten',d:'Klappen voll ausgefahren'},
+{c:'Vfe',n:'Max. mit Klappen',en:'Max Flap Extended Speed',v:'85 kt',col:'#ffffff',mark:'Weisser Bogen Obergrenze',d:'Nie mit Klappen ueber Vfe'},
+{c:'Vx',n:'Bester Steigwinkel',en:'Best Angle of Climb',v:'59 kt',col:'#6a85a8',mark:'—',d:'Maximale Hoehe pro Distanz – kurzes Hindernis'},
+{c:'Vy',n:'Beste Steigrate',en:'Best Rate of Climb',v:'74 kt',col:'#6a85a8',mark:'—',d:'Maximale Hoehe pro Zeiteinheit'},
+{c:'Va',n:'Manoeviergeschwindigkeit',en:'Maneuvering Speed',v:'102 kt',col:'#6a85a8',mark:'—',d:'Unter Va: volle Steuerausschlaege sicher'},
+{c:'Vno',n:'Max. Reiseflug (ruhige Luft)',en:'Max Structural Cruise Speed',v:'129 kt',col:'#34d399',mark:'Gruener Bogen Obergrenze',d:'Obere Grenze normaler Betrieb'},
+{c:'Vne',n:'Never Exceed Speed',en:'Never Exceed Speed',v:'163 kt',col:'#ff4060',mark:'Roter Strich',d:'Absolut nie ueberschreiten – Strukturversagen!'},
+{c:'Vr',n:'Rotationsgeschwindigkeit',en:'Rotation Speed',v:'~55 kt',col:'#6a85a8',mark:'—',d:'Nase heben zum Abheben'},
+{c:'Vref',n:'Anfluggeschwindigkeit',en:'Reference Landing Speed',v:'~65 kt',col:'#6a85a8',mark:'—',d:'Ueber der Schwelle – typisch 1,3xVs0'},
+];
+
+const LR_DATA=[
+{cls:'G',col:'#888780',bg:'rgba(136,135,128,.1)',name:'Unkontrolliert',badge:'Kein ATC',rows:[
+['Freigabe','Keine'],['Funk','Nur in RMZ/TMZ Pflicht'],['Transponder','Ab 5000ft AMSL / 3500ft AGL → Code 7000'],
+['VFR-Minima','1500m Sicht, frei von Wolken (unter 3000ft AMSL / 1000ft AGL bei ≤140kt)'],
+['Besonderheit','Nachts in G ausserhalb RMZ: keine staendige Hoerbereitschaft!'],
+]},
+{cls:'E',col:'#85B7EB',bg:'rgba(133,183,235,.1)',name:'Kontrolliert (offen)',badge:'VFR ohne Freigabe',rows:[
+['Freigabe','VFR: nein – IFR: ja'],['Funk','Hoerbereitschaft auf zugewiesener Frequenz Pflicht'],
+['VFR-Minima','5km Flugsicht · 1500m horizontal · 300m (1000ft) vertikal von Wolken'],
+['Hoehe','1000/1700ft AGL bis FL 100'],['Besonderheit','Typisches PPL-Revier'],
+]},
+{cls:'D / CTR',col:'#FAC775',bg:'rgba(250,199,117,.1)',name:'Kontrollzone',badge:'Freigabe Pflicht',rows:[
+['Freigabe','Ja – vor Einflug einholen'],['Funk','5 Min. vor Pflichtmeldepunkt · Hoerbereitschaft Pflicht'],
+['VFR-Minima','5km Flugsicht · 1500m horiz. · 1000ft vertikal'],['Hoehe','Boden bis ~2500ft'],
+['Merke','Alle Kontrollzonen in DE = Luftraum D (Pruefung Frage 221)'],
+]},
+{cls:'C',col:'#ED93B1',bg:'rgba(237,147,177,.1)',name:'Oberer Luftraum',badge:'FL100–195',rows:[
+['Freigabe','Ja'],['Sprache','NUR ENGLISCH ab FL 100! BZF I Kernthema'],['Transponder','Mode C/S Pflicht'],
+['Besonderheit','Als PPL selten – fuer BZF I Theorie wichtig'],
+]},
+{cls:'RMZ',col:'#97C459',bg:'rgba(151,196,89,.1)',name:'Radio Mandatory Zone',badge:'Funk Pflicht',rows:[
+['Freigabe','Keine'],['Funk','Melden vor Einflug: Rufzeichen + Typ + Position + Hoehe + Absicht'],
+['Hoehe','Boden bis 1000ft AGL'],['Merke','Keine Freigabe – nur Meldepflicht! (Fragen 219/220)'],
+]},
+{cls:'TMZ',col:'#c084fc',bg:'rgba(192,132,252,.1)',name:'Transponder Mandatory Zone',badge:'Xpdr Pflicht',rows:[
+['Freigabe','Keine'],['Transponder','Mode C/S · veroeffentlichten TMZ-Code unaufgefordert senden'],
+['Merke','Nicht einfach 7000 – publizierten Code nutzen (Frage 232)'],
+]},
+];
+const QQ = [
+  {id:1,cat:'rechtlich',q:'Welche zwischenstaatliche Organisation hat für den weltweiten Flugfunkdienst besondere Bedeutung?',a:'ITU',o:['ITU','IATA','UNESCO','NATO']},
+  {id:2,cat:'rechtlich',q:'Was ist die rechtliche Grundlage für das Errichten und Betreiben von Funkanlagen in der Bundesrepublik Deutschland?',a:'Das Telekommunikationsgesetz (TKG)',o:['Das Telekommunikationsgesetz (TKG)','Das Luftverkehrsgesetz','Das Internationale Zivile Luftfahrtabkommen','Die Verordnung über die Flugsicherungsausrüstung der Luftfahrzeuge']},
+  {id:3,cat:'rechtlich',q:'Wer ist in der Bundesrepublik Deutschland für Frequenzzuteilungen zum Betrieb von Boden- und Luftfunkstellen zuständig?',a:'Die Bundesnetzagentur',o:['Die Bundesnetzagentur','Der Bundesminister des Innern','Die Luftfahrtbehörden der Länder','Das Flugsicherungsunternehmen (DFS)']},
+  {id:4,cat:'rechtlich',q:'Wer benötigt zur Durchführung des Sprechfunkverkehrs ein Flugfunkzeugnis?',a:'Der Luftsportgeräteführer im Luftraum D',o:['Der Luftsportgeräteführer im Luftraum D','Der Flugschüler in der Platzrunde eines unkontrollierten Flugplatzes','Der Betreiber einer Bodenfunkstelle für Flugbetriebsmeldungen','Der Flugschüler in der Platzrunde eines kontrollierten Flugplatzes']},
+  {id:5,cat:'rechtlich',q:'Wer benötigt zur Durchführung des Sprechfunkverkehrs kein Flugfunkzeugnis?',a:'Betreiber einer Funkstelle mit dem Rufzeichen "RÜCKHOLER"',o:['Betreiber einer Funkstelle mit dem Rufzeichen "RÜCKHOLER"','Fluglotse','Flugleiter an einem Segelfluggelände','Luftsportgeräteführer im Luftraum C']},
+  {id:6,cat:'rechtlich',q:'Wer benötigt zur Durchführung des Sprechfunkverkehrs kein Flugfunkzeugnis?',a:'Flugschüler in der Platzrunde von Flugplätzen mit / ohne Flugverkehrskontrolle',o:['Flugschüler in der Platzrunde von Flugplätzen mit / ohne Flugverkehrskontrolle','Fluglotse','Flugleiter an einem Landeplatz','Beauftragte für Luftaufsicht']},
+  {id:7,cat:'rechtlich',q:'Wozu berechtigt das BZF II? Zur Ausübung des Sprechfunkverkehrs ...',a:'in deutscher Sprache innerhalb der Bundesrepublik Deutschland',o:['in deutscher Sprache innerhalb der Bundesrepublik Deutschland','bei VFR-Flügen in englischer Sprache','bei IFR-Flügen','in deutscher und englischer Sprache bei allen deutschen Bodenfunkstellen']},
+  {id:8,cat:'rechtlich',q:'Wozu berechtigt das BZF II? Zur Ausübung des Sprechfunkverkehrs bei ...',a:'VFR-Flügen innerhalb der Bundesrepublik Deutschland in deutscher Sprache',o:['VFR-Flügen innerhalb der Bundesrepublik Deutschland in deutscher Sprache','VFR-Flügen innerhalb der BRD in englischer Sprache','IFR-Flügen','VFR-Flügen in einer der ICAO-Sprachen']},
+  {id:9,cat:'rechtlich',q:'Welches Flugfunkzeugnis wird benötigt, um den Sprechfunkverkehr in deutscher und englischer Sprache nach Sichtflugregeln durchführen zu dürfen?',a:'BZF I',o:['BZF I','BZF II','Kein Flugfunkzeugnis, da es sich um einen VFR-Flug handelt','Kein Flugfunkzeugnis, wenn der Fluglehrer einen schriftlichen Flugauftrag erteilt hat']},
+  {id:10,cat:'rechtlich',q:'Was ist eine Luftfunkstelle? Eine Funkstelle ...',a:'des beweglichen Flugfunkdienstes an Bord eines Luftfahrzeuges',o:['des beweglichen Flugfunkdienstes an Bord eines Luftfahrzeuges','an Bord eines Flugzeugträgers','des beweglichen Flugfunkdienstes an einem internationalen Verkehrsflughafen','des beweglichen Flugfunkdienstes an einem Landeplatz']},
+  {id:11,cat:'rechtlich',q:'Was ist eine Bodenfunkstelle?',a:'Eine ortsfeste Funkstelle im beweglichen Flugfunkdienst. In bestimmten Fällen an Bord eines Seefahrzeugs oder auf einer Plattform auf See',o:['Eine ortsfeste Funkstelle im beweglichen Flugfunkdienst. In bestimmten Fällen an Bord eines Seefahrzeugs oder auf einer Plattform auf See','Eine Funkstelle des festen Flugfernmeldedienstes','Jede Funkstelle zur Aussendung von Funksprüchen','Eine Funkstelle des Flugfernmeldedienstes an Land für den Austausch von Funkmeldungen']},
+  {id:12,cat:'betrieb',q:'Was bedeutet der Begriff "BLINDSENDUNG"?',a:'Das Übermitteln einer Meldung an die Flugverkehrsdienststelle, wenn eine Sprechfunkverbindung nicht hergestellt werden kann.',o:['Das Übermitteln einer Meldung an die Flugverkehrsdienststelle, wenn eine Sprechfunkverbindung nicht hergestellt werden kann.','Eine Übermittlung von meteorologischen Informationen für Flugzeuge über der hohen See außerhalb der UKW-Funküberdeckung','Eine Übermittlung von Informationen für die Luftfahrt, die nicht an einen bestimmten Empfänger gerichtet ist','Ein Funkspruch, dessen Erhalt vom Empfänger wiederholt werden muss']},
+  {id:13,cat:'betrieb',q:'Was bedeutet der Begriff "ALLGEMEINER ANRUF"?',a:'Funkstellen des beweglichen Flugfunkdienstes können gleichzeitig alle Funkstellen, die auf einer Frequenz hörbereit sind, anrufen',o:['Funkstellen des beweglichen Flugfunkdienstes können gleichzeitig alle Funkstellen, die auf einer Frequenz hörbereit sind, anrufen','Die Übermittlung von Meldungen über Wettererscheinungen, welche an eine oder mehrere bestimmte Stellen gerichtet ist','Eine Übermittlung, deren Empfang bestätigt werden muss','Eine Meldung mittels Sprechfunk von einer Bodenfunkstelle an eine bestimmte Luftfunkstelle']},
+  {id:14,cat:'betrieb',q:'Was bedeutet der Begriff "ROLLHALT"?',a:'Ein bezeichneter Ort zum Schutz einer Piste, an dem rollende Luftfahrzeuge und Fahrzeuge anhalten und warten müssen',o:['Ein bezeichneter Ort zum Schutz einer Piste, an dem rollende Luftfahrzeuge und Fahrzeuge anhalten und warten müssen','Eine nicht markierte Position auf dem Abstellplatz für die Allgemeine Luftfahrt','Eine markierte Position auf einer Startbahn, wo der Startlauf begonnen wird','Jeder markierte Abstellplatz auf dem Vorfeld eines Verkehrsflughafens']},
+  {id:15,cat:'luftraum',q:'Welche Abkürzung wird für den Begriff "KONTROLLZONE" verwendet?',a:'CTR',o:['CTR','CZ','CTZ','CTA']},
+  {id:16,cat:'luftraum',q:'Welche Bedeutung hat die Abkürzung "IMC"?',a:'Instrumentenwetterbedingungen',o:['Instrumentenwetterbedingungen','Sichtwetterbedingungen','Instrumentenflug','Sichtflug']},
+  {id:17,cat:'luftraum',q:'Welche Bedeutung hat die Abkürzung "FIR"?',a:'Fluginformationsgebiet',o:['Fluginformationsgebiet','Fluginformations-Radar','Fluginformation erbeten','Fluginformation erhalten']},
+  {id:18,cat:'betrieb',q:'Was bedeutet die Abkürzung "H24"?',a:'Ununterbrochener Betrieb bei Tag und Nacht',o:['Ununterbrochener Betrieb bei Tag und Nacht','Sonnenuntergang bis Sonnenaufgang','Keine festgelegte Betriebszeit','Höhe 2400 Fuss']},
+  {id:19,cat:'betrieb',q:'Was bedeutet die Abkürzung "HX"?',a:'Keine festgelegte Betriebszeit',o:['Keine festgelegte Betriebszeit','Höhe nicht festgelegt','Sonnenaufgang bis Sonnenuntergang','Ununterbrochener Betrieb bei Tag und Nacht']},
+  {id:20,cat:'betrieb',q:'Was bedeutet die Abkürzung "HJ"?',a:'Sonnenaufgang bis Sonnenuntergang',o:['Sonnenaufgang bis Sonnenuntergang','Keine festgelegte Betriebszeit','Sonnenuntergang bis Sonnenaufgang','Ununterbrochener Betrieb bei Tag und Nacht']},
+  {id:21,cat:'betrieb',q:'Welche Bedeutung hat die Abkürzung "AIS"?',a:'Flugberatungsdienst',o:['Flugberatungsdienst','Flughafeninformationssystem','Allgemeine Informationsstelle','Allwetter-Informationssystem']},
+  {id:22,cat:'betrieb',q:'Welche Bedeutung hat die Abkürzung "SAR"?',a:'Such- und Rettungsdienst',o:['Such- und Rettungsdienst','"STOPP AM ROLLHALT"','Sekundär-Anflugradar','Standardanflugroute']},
+  {id:23,cat:'betrieb',q:'Welche Abkürzung wird für den Begriff "KOORDINIERTE WELTZEIT" verwendet?',a:'UTC',o:['UTC','GMT','Z-Zeit','CUT']},
+  {id:24,cat:'betrieb',q:'Welche Bedeutung hat die Abkürzung "ATIS"?',a:'Automatische Ausstrahlung von Lande- und Startinformationen (AUTOMATIC TERMINAL INFORMATION SERVICE)',o:['Automatische Ausstrahlung von Lande- und Startinformationen (AUTOMATIC TERMINAL INFORMATION SERVICE)','Flugverkehrsinformationsdienst (AIR TRAFFIC INFORMATION SERVICE)','Flughafengebäude Informationsdienst (AIRPORT TERMINAL INFORMATION SERVICE)','Automatisches Informationssystem (AUTOMATIC INFORMATION SYSTEM)']},
+  {id:25,cat:'betrieb',q:'Was bedeutet die Q-Gruppe "QFE"?',a:'Der Luftdruck in Flugplatzhöhe oder an der Start- und Landebahnschwelle',o:['Der Luftdruck in Flugplatzhöhe oder an der Start- und Landebahnschwelle','Der Luftdruck bezogen auf einen Punkt auf der Erdoberfläche','Der Luftdruck bezogen auf das höchste feste Hindernis eines Flugplatzes','Die Höhenmesser-Skalaeinstellung, die nach der Landung die Platzhöhe anzeigt']},
+  {id:26,cat:'betrieb',q:'Was bedeutet die Q-Gruppe "QNH"?',a:'Skaleneinstellung am Höhenmesser, damit bei der Landung die Flugplatzhöhe angezeigt wird',o:['Skaleneinstellung am Höhenmesser, damit bei der Landung die Flugplatzhöhe angezeigt wird','Der Luftdruck in Flugplatzhöhe oder an der Landebahnschwelle','Der am Flughafenbezugspunkt gemessene Luftdruck','Der Luftdruck bezogen auf das höchste Hindernis auf einem Flughafen']},
+  {id:27,cat:'betrieb',q:'Wenn Sie auf dem Höhenmesser die Höhe über NN ablesen wollen, welcher Luftdruckwert muss eingestellt sein?',a:'QNH',o:['QNH','QFE','QUJ','QDM']},
+  {id:28,cat:'betrieb',q:'Wenn Sie auf dem Höhenmesser die Höhe über dem Flugplatz ablesen wollen, welcher Luftdruckwert muss eingestellt sein?',a:'QFE',o:['QFE','QDR','QNH','QTE']},
+  {id:29,cat:'nav',q:'Was bedeutet die Q-Gruppe "QDM"?',a:'Missweisender Kurs zur Station',o:['Missweisender Kurs zur Station','Rechtweisende Peilung von der Station','Missweisende Peilung von der Station','Rechtweisender Steuerkurs zur Station (kein Wind)']},
+  {id:30,cat:'nav',q:'Wie heißt die Q-Gruppe für "MISSWEISENDER KURS ZUR STATION"?',a:'QDM',o:['QDM','QNE','QDR','QTE']},
+  {id:31,cat:'nav',q:'Was bedeutet die Q-Gruppe "QDR"?',a:'Missweisende Peilung von der Station',o:['Missweisende Peilung von der Station','Missweisender Steuerkurs zur Station (kein Wind)','Rechtweisende Peilung / Funkstandlinie von der Station','Rechtweisender Steuerkurs zur Station']},
+  {id:32,cat:'nav',q:'Wie heißt die Q-Gruppe für "MISSWEISENDE PEILUNG VON DER STATION"?',a:'QDR',o:['QDR','QDM','QTE','QFE']},
+  {id:33,cat:'betrieb',q:'Was sind Peilfunkmeldungen? Meldungen, die ...',a:'zur Übermittlung von Peilwerten zur navigatorischen Unterstützung dienen',o:['zur Übermittlung von Peilwerten zur navigatorischen Unterstützung dienen','den Ausfall von Funknavigationsanlagen an Bord betreffen','der Übermittlung von QNH-Werten dienen','den Ausfall von Funknavigationsanlagen am Boden betreffen']},
+  {id:34,cat:'betrieb',q:'Welche Meldungsart steht in der Rangfolge vor den Flugsicherheitsmeldungen?',a:'Peilfunkmeldung',o:['Peilfunkmeldung','Staatstelegramm','Wettermeldung','Flugbetriebsmeldung']},
+  {id:35,cat:'betrieb',q:'Meldungen, die bei der Durchführung der Flugverkehrskontrolle übermittelt werden, sind ...',a:'Flugsicherheitsmeldungen',o:['Flugsicherheitsmeldungen','Peilfunkmeldungen','Flugbetriebsmeldungen','Dringlichkeitsmeldungen']},
+  {id:36,cat:'betrieb',q:'Eine Meldung, welche die Sicherheit eines Luftfahrzeugs, eines anderen Fahrzeugs oder einer Person an Bord betrifft, ist eine ...',a:'Dringlichkeitsmeldung',o:['Dringlichkeitsmeldung','Flugbetriebsmeldung','Notmeldung','Flugsicherheitsmeldung']},
+  {id:37,cat:'betrieb',q:'Eine Meldung betreffend dringend benötigter Luftfahrzeugteile ist eine ...',a:'Flugbetriebsmeldung',o:['Flugbetriebsmeldung','Dringlichkeitsmeldung','Flugsicherheitsmeldung','Flugverkehrskontrollmeldung']},
+  {id:38,cat:'betrieb',q:'Welche der aufgeführten Meldungen sind im beweglichen Flugfunkdienst zulässig?',a:'Peilfunkmeldungen',o:['Peilfunkmeldungen','Verwaltungsmeldungen der Luftfahrtbehörden','Meldungen von Luftfahrzeughaltern','Fernschreibmeldungen']},
+  {id:39,cat:'betrieb',q:'Die Meldung "MEINE VORAUSSICHTLICHE ANKUNFTSZEIT IST 1206, BESTELLEN SIE MIR BITTE EIN TAXI" ist ...',a:'eine unerlaubte Meldung im beweglichen Flugfunkdienst',o:['eine unerlaubte Meldung im beweglichen Flugfunkdienst','eine Dringlichkeitsmeldung','eine Flugsicherheitsmeldung','eine Flugbetriebsmeldung']},
+  {id:40,cat:'betrieb',q:'Die Meldung "ERBITTE RADAR-FÜHRUNG ZUM UMFLIEGEN DES GEWITTERS" ist eine ...',a:'Flugsicherheitsmeldung',o:['Flugsicherheitsmeldung','Wettermeldung','Dringlichkeitsmeldung','Peilfunkmeldung']},
+  {id:41,cat:'betrieb',q:'Die Freigabe "PISTE 05, START FREI" ist eine ...',a:'Flugsicherheitsmeldung',o:['Flugsicherheitsmeldung','unerlaubte Meldung','Dringlichkeitsmeldung','Flugbetriebsmeldung']},
+  {id:42,cat:'betrieb',q:'Die Priorität der Meldung "ERBITTE QDM" ist ...',a:'höher als "START FREI"',o:['höher als "START FREI"','niedriger als "ERBITTE QNH"','niedriger als "STEIGEN SIE AUF FLUGFLÄCHE 85"','gleichwertig mit "PISTE 32, LANDUNG FREI"']},
+  {id:43,cat:'betrieb',q:'Die Priorität der Anweisung "ROLLEN SIE ZUM ROLLHALT PISTE 12 ÜBER C" ist ...',a:'gleichwertig mit "ROLLEN SIE ZUM ABFLUGPUNKT PISTE 05, DORT HALTEN"',o:['gleichwertig mit "ROLLEN SIE ZUM ABFLUGPUNKT PISTE 05, DORT HALTEN"','niedriger als "LANDUNG FREI"','höher als "SENDEN SIE FÜR PEILUNG"','höher als "BEACHTEN SIE BAUARBEITEN LINKS DER ROLLBAHN G"']},
+  {id:44,cat:'betrieb',q:'Wie wird die Uhrzeit im Flugfunkdienst übermittelt, wenn Verwechslungen ausgeschlossen sind?',a:'In Minuten, zweistellig',o:['In Minuten, zweistellig','In Stunden und Minuten','In Minuten und Sekunden','Nach Belieben']},
+  {id:45,cat:'betrieb',q:'Wie wird das Rufzeichen DEJFC richtig buchstabiert?',a:'DELTA ECHO JULIETT FOXTROT CHARLIE',o:['DELTA ECHO JULIETT FOXTROT CHARLIE','DELTA ECHO YULIETT FOXTROTT CHARLIE','DELTA ECHO JULIETT FOX CHARLIE','DELTA ECHO YULIETT FOX CHARLIE']},
+  {id:46,cat:'betrieb',q:'Wie wird das Rufzeichen DIJYF richtig buchstabiert?',a:'DELTA INDIA JULIETT YANKEE FOXTROT',o:['DELTA INDIA JULIETT YANKEE FOXTROT','DELTA YULIETT INDIA JANKEE FOXTROT','DELTA INDIA JULIETT YANKEE FOX','DELTA INDIA JANKEE YULIETT FOXTROT']},
+  {id:47,cat:'betrieb',q:'Wie wird die Flughöhe von 3500 Fuss richtig übermittelt?',a:'DREI TAUSEND FÜNF HUNDERT FUSS',o:['DREI TAUSEND FÜNF HUNDERT FUSS','DREI FÜNEFF HUNDERT FUSS','DREI FÜNF NULL NULL FUSS','DREI TAUSEND FÜNF NULL NULL FUSS']},
+  {id:48,cat:'betrieb',q:'Wie übermittelt man "QNH 1001" richtig?',a:'QNH eins null null eins',o:['QNH eins null null eins','QNH ein tausend eins','QNH eins zero zero eins','QNH eintausend und eins']},
+  {id:49,cat:'betrieb',q:'Wie wird die VHF-Frequenz 120,275 MHz übermittelt?',a:'eins zwo null Komma zwo sieben fünf',o:['eins zwo null Komma zwo sieben fünf','eins zwanzig Komma zwo sieben','eins zwei null Komma zwo sieben','eins zwo null zwo sieben füneff']},
+  {id:50,cat:'betrieb',q:'Wie übermittelt man die Zeit 1318, wenn man einen Irrtum ausschließen will?',a:'eins drei eins acht',o:['eins drei eins acht','dreizehn eins acht','dreizehn achtzehn','eins acht nach dreizehn Uhr']},
+  {id:51,cat:'betrieb',q:'Wie lautet das Rufzeichen einer Bodenfunkstelle an einem kontrollierten Flugplatz für die Bewegungslenkung auf dem Rollfeld?',a:'ROLLKONTROLLE',o:['ROLLKONTROLLE','INFORMATION','RADAR','TURM']},
+  {id:52,cat:'betrieb',q:'Wie lautet das Rufzeichen einer Bodenfunkstelle an einem kontrollierten Flugplatz für die Bewegungslenkung in der Platzrunde?',a:'TURM',o:['TURM','RÜCKHOLER','VORFELD','INFORMATION']},
+  {id:53,cat:'betrieb',q:'Wie werden die Rufzeichen von deutschen Bodenfunkstellen bei einem unkontrollierten Landeplatz gebildet?',a:'RADIO',o:['RADIO','LUFTAUFSICHT','TURM','FLUGLEITUNG']},
+  {id:54,cat:'betrieb',q:'Wie werden Rufzeichen von deutschen Bodenfunkstellen bei Segelfluggeländen gebildet?',a:'SEGELFLUG',o:['SEGELFLUG','RADIO','BODEN','INFORMATION']},
+  {id:55,cat:'betrieb',q:'Das Rufzeichen für den Fluginformationsdienst durch das Flugsicherungsunternehmen lautet:',a:'INFORMATION',o:['INFORMATION','RADIO','INFO','FLUGINFORMATION']},
+  {id:56,cat:'betrieb',q:'Was erhält man von einer Bodenfunkstelle mit dem Rufzeichen "INFORMATION"?',a:'Flugplatzwetter',o:['Flugplatzwetter','Rollanweisungen','Landefreigaben','Startfreigaben']},
+  {id:57,cat:'betrieb',q:'Wann darf bei der Abwicklung des Sprechfunkverkehrs das Rufzeichen der Bodenfunkstelle weggelassen werden?',a:'Nach Herstellen der Funkverbindung',o:['Nach Herstellen der Funkverbindung','Wenn sich das Luftfahrzeug in der Platzrunde befindet','Bei jedem Funkanruf','Wenn eine Verwechslung mit anderen Luftfunkstellen ausgeschlossen ist']},
+  {id:58,cat:'betrieb',q:'Wie werden Rufzeichen deutscher Luftfunkstellen gebildet?',a:'Aus den Zeichen des Eintragungszeichen des Luftfahrzeugs',o:['Aus den Zeichen des Eintragungszeichen des Luftfahrzeugs','Aus der Musterbezeichnung und den drei letzten Stellen des Eintragungszeichens','Aus der Flugnummer in Verbindung mit dem Eintragungszeichen','Aus dem Buchstaben "D" und drei weiteren Buchstaben']},
+  {id:59,cat:'betrieb',q:'Ein Luftfahrzeug darf den Typ seines Rufzeichens im Sprechfunkverkehr während des Fluges nicht ändern, ausgenommen vorübergehend ...',a:'auf Anweisung einer Flugverkehrskontrollstelle im Interesse der Sicherheit',o:['auf Anweisung einer Flugverkehrskontrollstelle im Interesse der Sicherheit','für Motorsegler beim Wechsel vom Motor- zum Segelflug','auf Antrag des Piloten','wenn der IFR-Flugplan aufgehoben und der Flug nach VFR fortgesetzt wird']},
+  {id:60,cat:'betrieb',q:'Wie wird das abgekürzte Rufzeichen einer Luftfunkstelle gebildet?',a:'Aus dem ersten Zeichen des Eintragungszeichens und mindestens den zwei letzten Zeichen des Rufzeichens',o:['Aus dem ersten Zeichen des Eintragungszeichens und mindestens den zwei letzten Zeichen des Rufzeichens','Aus den drei letzten Stellen des Rufzeichens','Aus den beiden letzten Stellen des Eintragungszeichens','Aus der Luftfahrzeugmusterbezeichnung in Verbindung mit der letzten Stelle des Rufzeichens']},
+  {id:61,cat:'betrieb',q:'Wann darf eine Luftfunkstelle ihr abgekürztes Rufzeichen verwenden?',a:'Nachdem die Bodenfunkstelle es bereits verwendet hat',o:['Nachdem die Bodenfunkstelle es bereits verwendet hat','Nur bei Flügen in der Platzrunde','Bei jedem Funkanruf','Nach Herstellung der Sprechfunkverbindung mit der Bodenfunkstelle']},
+  {id:62,cat:'luftraum',q:'Mit welchem Flugverkehrsdienst kann man während des Fluges im Luftraum C Sprechfunkverbindung aufnehmen?',a:'Flugverkehrskontrolldienst',o:['Flugverkehrskontrolldienst','Flugnavigationsdienst','Flugfernmeldedienst','Flugberatungsdienst']},
+  {id:63,cat:'betrieb',q:'Mit welchem Flugverkehrsdienst kann man während des Fluges Sprechfunkverbindung aufnehmen?',a:'Fluginformationsdienst',o:['Fluginformationsdienst','Flugfernmeldedienst','Flugnavigationsdienst','Flugberatungsdienst']},
+  {id:64,cat:'betrieb',q:'Welche Redewendung ist anzuwenden, wenn bei einem Anruf das Rufzeichen der rufenden Funkstelle nicht verstanden wurde?',a:'WIEDERHOLEN SIE IHR RUFZEICHEN',o:['WIEDERHOLEN SIE IHR RUFZEICHEN','MONITOR IHR RUFZEICHEN','ÜBERPRÜFEN SIE IHR RUFZEICHEN','BESTÄTIGEN SIE IHR RUFZEICHEN']},
+  {id:65,cat:'betrieb',q:'Eine Meldung wird nicht vollständig wiederholt, obwohl es die Art der Meldung erfordert. Mit welcher Redewendung wird er zur Wiederholung aufgefordert?',a:'WIEDERHOLEN SIE WÖRTLICH',o:['WIEDERHOLEN SIE WÖRTLICH','KOMMEN','BESTÄTIGEN SIE','LESEN SIE ZURÜCK']},
+  {id:66,cat:'betrieb',q:'Wie lautet die Redewendung für "JA"?',a:'POSITIV',o:['POSITIV','VERSTANDEN','RICHTIG','DAS IST RICHTIG']},
+  {id:67,cat:'betrieb',q:'Wie lautet die Redewendung für "ERLAUBNIS WIRD NICHT ERTEILT"?',a:'NEGATIV',o:['NEGATIV','FALSCH','NICHT RICHTIG','NEIN']},
+  {id:68,cat:'betrieb',q:'Wie lautet die Redewendung für "ICH HABE IHRE LETZTE MELDUNG VOLLSTÄNDIG ERHALTEN"?',a:'VERSTANDEN',o:['VERSTANDEN','POSITIV','WIRD AUSGEFÜHRT','WILCO']},
+  {id:69,cat:'betrieb',q:'Der Inhalt einer klar verständlichen Meldung erscheint zweifelhaft. Welche Redewendung wenden Sie an?',a:'BESTÄTIGEN SIE',o:['BESTÄTIGEN SIE','WIEDERHOLEN SIE WÖRTLICH','ÜBERMITTELN SIE NOCHMALS','BERICHTIGUNG']},
+  {id:70,cat:'betrieb',q:'Der Höhenmesser ist auf 1013,2 hPa eingestellt und zeigt 7500 Fuss an. Die Bodenfunkstelle fragt nach der augenblicklichen Höhe. Wie muss die Antwort lauten?',a:'FL 75',o:['FL 75','7500 ft','7500 ft AGL','7500 ft AMSL']},
+  {id:71,cat:'betrieb',q:'Welche Redewendung für "BEI DER ÜBERMITTLUNG IST EIN FEHLER UNTERLAUFEN, ES MUSS RICHTIG HEIßEN ..."?',a:'QNH 1003 BERICHTIGUNG QNH 1002',o:['QNH 1003 BERICHTIGUNG QNH 1002','QNH 1003 TRENNUNG TRENNUNG 1002','QNH 1003 NEGATIV QNH 1002','QNH 1003 ICH WIEDERHOLE 1002']},
+  {id:72,cat:'betrieb',q:'Welche Redewendung für "GENEHMIGUNG, UNTER FESTGESETZTEN BEDINGUNGEN ZU VERFAHREN"?',a:'FREI',o:['FREI','POSITIV','GENEHMIGT','KORREKT']},
+  {id:73,cat:'betrieb',q:'Mit welcher Redewendung wird ein Pilot angewiesen, mit seinem Transponder einen bestimmten Code zu senden?',a:'SQUAWK',o:['SQUAWK','SENDEN SIE MITTELS TRANSPONDER','TRANSPOND','RESPOND MODE …. / CODE ….']},
+  {id:74,cat:'betrieb',q:'Die Redewendung "WILCO" bedeutet:',a:'Ich habe Ihre Nachricht verstanden und werde entsprechend handeln',o:['Ich habe Ihre Nachricht verstanden und werde entsprechend handeln','Warten Sie, ich werde Sie rufen','Ich habe Ihre letzte Meldung vollständig erhalten','Ich wiederhole zur Klarstellung oder Betonung']},
+  {id:75,cat:'betrieb',q:'Die Redewendung "MONITOR" bedeutet:',a:'Hören Sie (Frequenz) ab',o:['Hören Sie (Frequenz) ab','Betrachten Sie diese Übermittlung als nicht gesendet','Stellen Sie Funkverbindung her mit (Station)','Teilen Sie mit, dass die Meldung empfangen und verstanden wurde']},
+  {id:76,cat:'betrieb',q:'Wie bestätigt ein Pilot die Anweisung "STARTEN SIE DURCH PISTE BLOCKIERT!"?',a:'STARTE DURCH',o:['STARTE DURCH','VERSTANDEN','WILCO','POSITIV']},
+  {id:77,cat:'betrieb',q:'Mit welcher Sprechgruppe bestätigt ein Pilot "DEKMG HALTEN SIE POSITION STARTFREIGABE AUFGEHOBEN"?',a:'DEKMG HALTE',o:['DEKMG HALTE','DEKMG VERSTANDEN','DEKMG','DEKMG POSITIV']},
+  {id:78,cat:'betrieb',q:'DEHOL erhält Startfreigabe am Abflugpunkt der Piste 24. Wie bestätigt der Pilot die Freigabe?',a:'DEHOL PISTE 24 START FREI',o:['DEHOL PISTE 24 START FREI','DEHOL START FREI','DEHOL WILCO','DEHOL ICH STARTE']},
+  {id:79,cat:'betrieb',q:'DEKUL hat seine Startvorbereitungen beendet. Mit welcher Sprechgruppe teilt er dies dem TURM mit?',a:'DEKUL ABFLUGBEREIT',o:['DEKUL ABFLUGBEREIT','DEKUL START FREI','DEKUL STARTBEREIT','DEKUL STARTET']},
+  {id:80,cat:'betrieb',q:'Was bedeutet die Anweisung "(RUFZEICHEN) SQUAWK 1352"?',a:'Schalten Sie den Transponder auf Mode/Code 1352',o:['Schalten Sie den Transponder auf Mode/Code 1352','Zählen Sie 1-3-5-2- für Funkpeilung','Erbitte Testsendung auf Frequenz 135,200 MHz','Schalten Sie um auf Frequenz 135,200']},
+  {id:81,cat:'betrieb',q:'Verkehrshinweis: "UNBEKANNTES FLUGZIEL ZEHN UHR ENTFERNUNG 4 MEILEN". Wo befindet sich das Flugziel?',a:'Links voraus',o:['Links voraus','Querab rechts','Rechts voraus','In Flugrichtung voraus']},
+  {id:82,cat:'betrieb',q:'Wann ist ein Einleitungsanruf abzusetzen?',a:'Beim Herstellen der Sprechfunkverbindung',o:['Beim Herstellen der Sprechfunkverbindung','Nur in Notfällen','Wenn eine Meldung nicht verstanden wurde','Bei jedem Funkkontakt']},
+  {id:83,cat:'betrieb',q:'Welches der folgenden Beispiele ist ein Einleitungsanruf?',a:'AACHEN RADIO DELID',o:['AACHEN RADIO DELID','SAARBRÜCKEN TURM HIER DIAMK','HAMBURG TURM VON DER DEMIL KOMMEN','D2468 FÜR WASSERKUPPE SEGELFLUG WIE HÖREN SIE MICH?']},
+  {id:84,cat:'betrieb',q:'Muss ein "ALLGEMEINER ANRUF" bestätigt werden?',a:'Nein',o:['Nein','Ja, nur von dem zuerst gerufenen Piloten','Ja, von allen Piloten in beliebiger Reihenfolge','Ja, von allen Piloten in der Reihenfolge des Anrufs']},
+  {id:85,cat:'betrieb',q:'Welcher der folgenden Funkanrufe ist ein "ALLGEMEINER ANRUF"?',a:'AN ALLE HAMBURG TURM ... ENDE',o:['AN ALLE HAMBURG TURM ... ENDE','DEKOF, DIEBS, DKARL NÜRNBERG ROLLKONTROLLE','D8765 BERLIN INFORMATION','LUFTHANSA 123, LUFTHANSA 456']},
+  {id:86,cat:'betrieb',q:'Welcher der folgenden Anrufe ist ein "MEHRFACHANRUF"?',a:'DEABC, DGIAL, DHHIA RUFEN SIE LEIPZIG TURM',o:['DEABC, DGIAL, DHHIA RUFEN SIE LEIPZIG TURM','DIENO DELLW','AN ALLE DRESDEN TURM','DEAMM ERFURT ROLLKONTROLLE']},
+  {id:87,cat:'betrieb',q:'Muss ein "MEHRFACHANRUF" bestätigt werden?',a:'Ja, in der von der rufenden Funkstelle benutzten Reihenfolge',o:['Ja, in der von der rufenden Funkstelle benutzten Reihenfolge','Ja, in beliebiger Reihenfolge','Nein','Ja, nur von der zuerst gerufenen Funkstelle']},
+  {id:88,cat:'betrieb',q:'Ein Pilot empfängt einen Funkanruf, ist sich aber nicht sicher, ob er gerufen wurde. Wie verhält er sich richtig?',a:'Er wartet ab, bis der Anruf wiederholt wird',o:['Er wartet ab, bis der Anruf wiederholt wird','nennt das eigene Rufzeichen und wartet ab','nennt das eigene Rufzeichen mit der Sprechgruppe "WIEDERHOLEN SIE IHR RUFZEICHEN"','antwortet mit "WIEDERHOLEN SIE"']},
+  {id:89,cat:'betrieb',q:'Was ist vor Aufnahme des Sprechfunkverkehrs zu beachten?',a:'Nach Wahl der richtigen Frequenz sicherstellen, dass kein laufender Funkverkehr gestört wird',o:['Nach Wahl der richtigen Frequenz sicherstellen, dass kein laufender Funkverkehr gestört wird','Es muss eine Funkprobe stattgefunden haben','Das Luftfahrzeug muss sich in der Luft befinden','Die Entfernung darf nicht weniger als 30 NM betragen']},
+  {id:90,cat:'luftraum',q:'Vor Einflug in den Luftraum D muss Sprechfunkverbindung spätestens aufgenommen werden:',a:'5 Minuten vor Erreichen des Pflichtmeldepunktes',o:['5 Minuten vor Erreichen des Pflichtmeldepunktes','Beim Einflug in diesen Luftraum','Unmittelbar nach dem Start','Oberhalb von 3500 ft AGL']},
+  {id:91,cat:'luftraum',q:'Der Sprechfunkverkehr bei VFR-Flügen in und oberhalb Flugfläche 100 wird durchgeführt in ...',a:'englischer Sprache',o:['englischer Sprache','deutscher Sprache','einer der ICAO-Sprachen','deutscher oder englischer Sprache']},
+  {id:92,cat:'betrieb',q:'DGIGA erhält die Anweisung, HAMBURG TURM auf Frequenz 121,280 MHz zu rufen. Wie lautet die richtige Bestätigung?',a:'DGIGA rufe 121,280',o:['DGIGA rufe 121,280','DGIGA wechsele Frequenz','DGIGA werde TURM rufen DGIGA','HAMBURG TURM DGIGA']},
+  {id:93,cat:'luftraum',q:'Dauernde Hörbereitschaft ist aufrechtzuerhalten bei VFR-Flügen im Luftraum:',a:'C und D',o:['C und D','nur D','E','E und D']},
+  {id:94,cat:'luftraum',q:'Ein Pilot führt ein Luftfahrzeug in der Platzrunde eines Flugplatzes mit Flugverkehrskontrolle. Wozu ist er grundsätzlich verpflichtet?',a:'Ständige Hörbereitschaft auf der Frequenz der Flugplatzkontrollstelle zu halten',o:['Ständige Hörbereitschaft auf der Frequenz der Flugplatzkontrollstelle zu halten','In jedem Teil der Platzrunde eine Standortmeldung abzusetzen','Eine Wetterberatung einzuholen','In jedem Fall vor Beginn des Fluges einen Flugplan abzugeben']},
+  {id:95,cat:'luftraum',q:'Bei welchen Flügen muss keine ständige Hörbereitschaft aufrechterhalten werden?',a:'Bei Nacht im Luftraum G (außerhalb RMZ)',o:['Bei Nacht im Luftraum G (außerhalb RMZ)','Bei Nacht im Luftraum C (außerhalb der Umgebung des Flugplatzes)','Bei Nacht im Luftraum D (außerhalb der Umgebung des Flugplatzes)','Bei Nacht im Luftraum E (außerhalb der Umgebung des Flugplatzes)']},
+  {id:96,cat:'luftraum',q:'Bei welchen Flügen nach Sichtflugregeln muss der Pilot ständige Hörbereitschaft halten? Bei Flügen ...',a:'im Luftraum C',o:['im Luftraum C','im Luftraum F','im Luftraum E (außerhalb RMZ)','im Luftraum G (außerhalb RMZ)']},
+  {id:97,cat:'luftraum',q:'Wer ein Luftfahrzeug auf einem Flugplatz mit Flugverkehrskontrolle führt, ist u.a. verpflichtet, die vorherige Genehmigung für alle Bewegungen einzuholen, durch die das ...',a:'Rollen, Starten und Landen eingeleitet werden oder damit in Zusammenhang stehen',o:['Rollen, Starten und Landen eingeleitet werden oder damit in Zusammenhang stehen','Starten und Landen eingeleitet werden','Rollen, Starten und Landen eingeleitet werden','Starten und Landen eingeleitet werden oder damit in Zusammenhang stehen']},
+  {id:98,cat:'luftraum',q:'Wer ein Luftfahrzeug nach Sichtflugregeln auf einem Flugplatz mit Flugverkehrskontrolle führt, ist verpflichtet ...',a:'dauernde Hörbereitschaft auf der vorgesehenen Funkfrequenz zu halten oder auf Anweisungen durch Licht- und Bodensignale sowie Zeichen zu achten',o:['dauernde Hörbereitschaft auf der vorgesehenen Funkfrequenz zu halten oder auf Anweisungen durch Licht- und Bodensignale sowie Zeichen zu achten','in jedem Teil der Platzrunde eine Standortmeldung abzusetzen','in jedem Fall vor Beginn des Fluges einen Flugplan abzugeben','eine Wetter- und Flugberatung einzuholen']},
+  {id:99,cat:'technik',q:'Was bedeutet bei einem Funktest der Hinweis "HÖRE SIE ZWO"?',a:'zeitweise verständlich',o:['zeitweise verständlich','schwer verständlich','verständlich','sehr gut verständlich']},
+  {id:100,cat:'technik',q:'Was bedeutet bei einem Funktest der Hinweis "HÖRE SIE DREI"?',a:'schwer verständlich',o:['schwer verständlich','zeitweise verständlich','verständlich','sehr gut verständlich']},
+  {id:101,cat:'technik',q:'Was bedeutet bei einem Funktest der Hinweis "HÖRE SIE VIER"?',a:'verständlich',o:['verständlich','schwer verständlich','unverständlich','sehr gut verständlich']},
+  {id:102,cat:'technik',q:'Was bedeutet bei einem Funktest der Hinweis "HÖRE SIE FÜNF"?',a:'sehr gut verständlich',o:['sehr gut verständlich','unverständlich','zeitweise verständlich','schlecht verständlich']},
+  {id:103,cat:'technik',q:'Ein Funktest ist "verständlich". Wie wird die Verständlichkeit ausgedrückt?',a:'Höre Sie vier',o:['Höre Sie vier','Höre Sie drei','Höre Sie laut und deutlich','Höre Sie']},
+  {id:104,cat:'technik',q:'Ein Funktest ist "schwer verständlich". Wie wird die Verständlichkeit ausgedrückt?',a:'Höre Sie drei',o:['Höre Sie drei','Höre Sie','Höre Sie zwo','Höre Sie KOMMEN']},
+  {id:105,cat:'betrieb',q:'Was muss bei einer Testübermittlung u.a. angegeben werden?',a:'Die Wörter "RADIO CHECK"',o:['Die Wörter "RADIO CHECK"','Die Wörter "TRANSMISSION CHECK"','Die Wörter "TEST CHECK"','Die Wörter "CHECK CHECK"']},
+  {id:106,cat:'betrieb',q:'Welche Meldung muss ein Pilot wiederholen?',a:'START FREI',o:['START FREI','ACHTEN SIE AUF ENTGEGENKOMMENDEN HUBSCHRAUBER','BAUARBEITEN LINKS DER ROLLBAHN','SCHWERE GEWITTER IM RHEINTAL BEI MANNHEIM']},
+  {id:107,cat:'betrieb',q:'Welche Meldungen müssen wiederholt werden?',a:'Höhenmessereinstellungen',o:['Höhenmessereinstellungen','Verkehrshinweise','Wettermeldungen','Rollbahnzustand']},
+  {id:108,cat:'betrieb',q:'Welche Meldungen müssen wiederholt werden?',a:'Die Frequenz bei Frequenzwechsel',o:['Die Frequenz bei Frequenzwechsel','Hinweise auf Bauarbeiten an der Start-/Landebahn','Wetterinformationen','Windrichtung und -stärke']},
+  {id:109,cat:'betrieb',q:'Wie wird der Empfang einer Flugverkehrskontrollfreigabe bestätigt?',a:'Durch Wiederholung von sicherheitsrelevanten Teilen der Freigabe',o:['Durch Wiederholung von sicherheitsrelevanten Teilen der Freigabe','zweimaliges Drücken der Mikrofontaste','Nennung des eigenen, abgekürzten Rufzeichens','dreimaliges Drücken der Mikrofontaste']},
+  {id:110,cat:'betrieb',q:'DESEL erhält: "DEL NACH DEM ABHEBEN STEIGEN SIE GERADEAUS AUF 3000 FUSS, DANN RECHTSKURVE, WIND 250 GRAD 7 KNOTEN, PISTE 22, START FREI". Richtige Bestätigung?',a:'DEL GERADEAUS STEIGEN AUF FLUGHÖHE 3000 FUSS, DANN RECHTSKURVE, PISTE 22, START FREI',o:['DEL GERADEAUS STEIGEN AUF FLUGHÖHE 3000 FUSS, DANN RECHTSKURVE, PISTE 22, START FREI','DEL START FREI, PISTE 22, WIND 250 GRAD, 7 KNOTEN','DEL WILCO, PISTE 22, START FREI','DEL AUF 3000 FUSS STEIGEN, START FREI']},
+  {id:111,cat:'betrieb',q:'Welche Teile der nachfolgenden Anweisungen müssen bestätigt werden?',a:'Freigaben, Rollanweisungen, Betriebspiste, QNH, SSR-Codes, Höhenanweisungen, Steuerkurs- und Geschwindigkeitsanweisungen, Frequenz bei Frequenzwechsel',o:['Freigaben, Rollanweisungen, Betriebspiste, QNH, SSR-Codes, Höhenanweisungen, Steuerkurs- und Geschwindigkeitsanweisungen, Frequenz bei Frequenzwechsel','Betriebsstart-/Landebahn, Bodensicht, Taupunkt, Startfreigabe, Frequenz bei Frequenzwechsel','Freigaben, Windrichtung/-geschwindigkeit, Steuerkursanweisungen, QNH, Frequenz bei Frequenzwechsel','Anweisungen über Steuerkurs, Flughöhe, Geschwindigkeit, Höhenmessereinstellung, Flugsicht, Windrichtung, Startfreigabe und Frequenz']},
+  {id:112,cat:'betrieb',q:'Bei welchen VFR-Flügen ist die Übermittlung von Standortmeldungen erforderlich?',a:'Einflügen in den Luftraum D',o:['Einflügen in den Luftraum D','allen Flügen im Luftraum E','Flügen während der Nacht im Luftraum G','Flügen über den Wolken im Luftraum E']},
+  {id:113,cat:'betrieb',q:'Standortmeldungen über Pflichtmeldepunkten müssen ...',a:'unabhängig von der erteilten Freigabe in jedem Fall abgesetzt werden, sofern nicht ausdrücklich darauf verzichtet wird',o:['unabhängig von der erteilten Freigabe in jedem Fall abgesetzt werden, sofern nicht ausdrücklich darauf verzichtet wird','nur abgesetzt werden, wenn es sich um einen Sonderflug handelt','nur dann abgesetzt werden, wenn die Platzkontrollstelle dazu auffordert','nicht abgesetzt werden']},
+  {id:114,cat:'betrieb',q:'Wann hat ein Pilot bei einem VFR-Flug der zuständigen Flugverkehrskontrollstelle eine Standortmeldung zu übermitteln?',a:'Beim Überflug von Pflichtmeldepunkten',o:['Beim Überflug von Pflichtmeldepunkten','Beim Verlassen des Luftraumes D','Nur beim Überflug von Funknavigationsanlagen (z.B. VOR, NDB)','Beim Einflug in die Lufträume E und F']},
+  {id:115,cat:'betrieb',q:'Welche Angabe kann unter bestimmten Voraussetzungen bei einem VFR-Flug aus einer Standortmeldung entfallen?',a:'Die Zeitangabe, wenn die Meldung zum Zeitpunkt des Überfluges erfolgt',o:['Die Zeitangabe, wenn die Meldung zum Zeitpunkt des Überfluges erfolgt','Der Standort, wenn dieser auf der Sichtflugkarte veröffentlicht ist','Die Flughöhe, wenn diese nicht höher als 3500 ft AGL ist','Das Funkrufzeichen, wenn es sich um einen nichtgewerblichen Flug handelt']},
+  {id:116,cat:'betrieb',q:'Welche Angaben enthält eine Standortmeldung bei Flügen in der Platzrunde?',a:'Funkrufzeichen des Luftfahrzeuges, Standort',o:['Funkrufzeichen des Luftfahrzeuges, Standort','Funkrufzeichen, Standort, Zeit','Funkrufzeichen, Standort, Höhe','Funkrufzeichen, Standort, Höhe, Zeit']},
+  {id:117,cat:'nav',q:'Welche Bedeutung hat das Symbol "gefülltes Dreieck im Kreis" auf der Sichtflugkarte?',a:'Pflichtmeldepunkt',o:['Pflichtmeldepunkt','Luftfahrthindernis','Funknavigationsanlage','Meldepunkt auf Anforderung (Bedarfsmeldepunkt)']},
+  {id:118,cat:'nav',q:'Welche Bedeutung hat das Symbol "offenes Dreieck im Kreis" auf der Sichtflugkarte?',a:'Meldepunkt auf Anforderung (Bedarfsmeldepunkt)',o:['Meldepunkt auf Anforderung (Bedarfsmeldepunkt)','Pflichtmeldepunkt','Militärflugplatz','Beleuchtetes Hindernis']},
+  {id:119,cat:'betrieb',q:'Wann kann die voraussichtliche Landezeit statt der Landemeldung übermittelt werden?',a:'Wenn sich das Luftfahrzeug in der Platzrunde befindet und die Landung sichergestellt erscheint',o:['Wenn sich das Luftfahrzeug in der Platzrunde befindet und die Landung sichergestellt erscheint','Wenn der Verkehr in der Platzrunde beobachtet wird','Auf Anforderung der Flugleitung, wenn die Landung sichergestellt erscheint','Nach Zustimmung der Flugleitung']},
+  {id:120,cat:'betrieb',q:'Bei Flugplanabgabe und Abflug von einem unkontrollierten Flugplatz - an wen wird die Startmeldung übermittelt?',a:'An die zuständige Flugverkehrskontrollstelle oder an den zuständigen FIS zur Weiterleitung an den AIS-C',o:['An die zuständige Flugverkehrskontrollstelle oder an den zuständigen FIS zur Weiterleitung an den AIS-C','An den Funknavigationsdienst zur Weiterleitung an den AIS-C','An den Flugberatungsdienst','An die Bodenfunkstelle des Zielflugplatzes']},
+  {id:121,cat:'betrieb',q:'Welche Angaben muss eine Startmeldung enthalten?',a:'Luftfahrzeugkennung, Startflugplatz, Startzeit, Zielflugplatz',o:['Luftfahrzeugkennung, Startflugplatz, Startzeit, Zielflugplatz','Luftfahrzeugkennung, Startflugplatz, Startzeit','Luftfahrzeugkennung, Startflugplatz, Zielflugplatz','Luftfahrzeugkennung, Startzeit, Zielflugplatz']},
+  {id:122,cat:'betrieb',q:'Wenn die Bewölkung mit "LOCKERE BEWÖLKUNG (SCATTERED)" angegeben wird, beträgt der Bedeckungsgrad:',a:'3 bis 4 Achtel',o:['3 bis 4 Achtel','8 Achtel','5 bis 7 Achtel','1 bis 2 Achtel']},
+  {id:123,cat:'betrieb',q:'Wenn die Bewölkung mit "DURCHBROCHEN BEWÖLKT (BROKEN)" angegeben wird, beträgt der Bedeckungsgrad:',a:'5 bis 7 Achtel',o:['5 bis 7 Achtel','1 bis 2 Achtel','8 Achtel','3 bis 4 Achtel']},
+  {id:124,cat:'betrieb',q:'Wenn die Bewölkung mit "BEDECKT (OVERCAST)" angegeben wird, beträgt der Bedeckungsgrad:',a:'8 Achtel',o:['8 Achtel','5 bis 7 Achtel','3 bis 4 Achtel','1 bis 2 Achtel']},
+  {id:125,cat:'betrieb',q:'Was bedeutet "3 bis 4 ACHTEL" Bedeckungsgrad?',a:'LOCKERE BEWÖLKUNG (SCATTERED)',o:['LOCKERE BEWÖLKUNG (SCATTERED)','BEDECKT (OVERCAST)','DURCHBROCHEN BEWÖLKT (BROKEN)','KEINE MARKANTEN WOLKEN (NO SIGNIFICANT CLOUDS)']},
+  {id:126,cat:'betrieb',q:'Was bedeutet "5 bis 7 ACHTEL" Bedeckungsgrad?',a:'DURCHBROCHEN BEWÖLKT (BROKEN)',o:['DURCHBROCHEN BEWÖLKT (BROKEN)','GERING BEWÖLKT (FEW)','BEDECKT (OVERCAST)','LOCKERE BEWÖLKUNG (SCATTERED)']},
+  {id:127,cat:'betrieb',q:'Was bedeutet "1 bis 2 ACHTEL" Bedeckungsgrad?',a:'GERING BEWÖLKT (FEW)',o:['GERING BEWÖLKT (FEW)','DURCHBROCHEN BEWÖLKT (BROKEN)','LOCKERE BEWÖLKUNG (SCATTERED)','KEINE MARKANTEN WOLKEN (NO SIGNIFICANT CLOUDS)']},
+  {id:128,cat:'betrieb',q:'Wenn die Angabe "CAVOK" in einer METAR steht, dann betragen die Werte für Sicht und Wolken:',a:'Sicht 10 km oder mehr, keine Bewölkung unter 5000 ft AGL',o:['Sicht 10 km oder mehr, keine Bewölkung unter 5000 ft AGL','Sicht 5000 m oder mehr, keine Bewölkung unter 5000 ft AGL','Sicht 10 km oder mehr, keine Bewölkung unter 1500 ft AGL','Sicht 5000 m oder mehr, keine Bewölkung unter 1500 ft AGL']},
+  {id:129,cat:'betrieb',q:'Wie sind die Werte für Flugsicht, Bodensicht und Pistensichtweite zu übermitteln?',a:'Weniger als 5 km in Metern, darüber in Kilometern',o:['Weniger als 5 km in Metern, darüber in Kilometern','In Fuss und NM','Bis 1500 m in Metern, darüber in Kilometern','Nur in NM']},
+  {id:130,cat:'betrieb',q:'Welche Übermittlung der Bodensicht ist richtig?',a:'"SICHT DREI TAUSEND METER"',o:['"SICHT DREI TAUSEND METER"','"SICHT ETWA NEUN TAUSEND FUSS"','"SICHT DREI KILOMETER"','"SICHT EINS KOMMA ACHT SEEMEILEN"']},
+  {id:131,cat:'betrieb',q:'Was versteht man unter VOLMET?',a:'Die Wetterrundsendungen für Flughafenwettermeldungen',o:['Die Wetterrundsendungen für Flughafenwettermeldungen','Den Fluginformationsdienst','Das Funkrufzeichen für eine Dienststelle des Deutschen Wetterdienstes (DWD)','Das Rufzeichen des Flugverkehrsberatungsdienstes']},
+  {id:132,cat:'betrieb',q:'Ein Pilot hat während des Fluges die Möglichkeit das Flugplatzwetter einzuholen über ...',a:'ATIS',o:['ATIS','GAFOR','AIS-C','UHF']},
+  {id:133,cat:'betrieb',q:'ATIS-Aussendungen dienen der Unterrichtung von Piloten. Welche Angaben enthalten sie?',a:'Lande- und Startinformationen zur sicheren Durchführung von Flügen nach VFR und IFR',o:['Lande- und Startinformationen zur sicheren Durchführung von Flügen nach VFR und IFR','Wetterinformationen für Überlandflüge unter VMC','Wetterinformationen für mehrere Flughäfen','Die rechtweisende Peilung zum Zielflugplatz']},
+  {id:134,cat:'betrieb',q:'Wie werden SIGMET-Meldungen in der Zeit von 0700 bis SS+30 verbreitet?',a:'Als Flugrundfunksendung (broadcast) auf den Frequenzen des Fluginformationsdienstes zu jeder halben und vollen Stunde',o:['Als Flugrundfunksendung (broadcast) auf den Frequenzen des Fluginformationsdienstes zu jeder halben und vollen Stunde','Als Flugrundfunksendung auf den für VOLMET veröffentlichten Frequenzen','Auf Anforderung des Luftfahrzeugführers','Als Flugrundfunksendung auf den Frequenzen der Flugverkehrskontrolle']},
+  {id:135,cat:'betrieb',q:'SIGMET-Meldungen - welche Angaben enthalten sie?',a:'Besondere Wettererscheinungen, z.B. Gewitter, Turbulenzen, Vereisung',o:['Besondere Wettererscheinungen, z.B. Gewitter, Turbulenzen, Vereisung','Angabe der Wolkenuntergrenze in Lufträumen der Klassen F und G','Routinewettermeldungen','Meteorologische Angaben in Kartenform, erhältlich bei Flugwetterwarten']},
+  {id:136,cat:'notfall',q:'Welche Angaben soll eine Notmeldung enthalten?',a:'Art der Notlage, Absicht des verantwortlichen Piloten, aktueller Standort, Flughöhe und Kurs',o:['Art der Notlage, Absicht des verantwortlichen Piloten, aktueller Standort, Flughöhe und Kurs','Art der Notlage, Ursache der Notlage, Bitte um Frequenzwechsel auf 121,500 MHz','Absichten des Piloten, Geschwindigkeit','Absichten des Luftfahrzeugführers, TAS, Standort, Sinkflugrate']},
+  {id:137,cat:'notfall',q:'Das Notsignal MAYDAY bedeutet, dass ...',a:'eine schwere und/oder unmittelbare Gefahr droht und sofortige Hilfe erforderlich ist',o:['eine schwere und/oder unmittelbare Gefahr droht und sofortige Hilfe erforderlich ist','ein Luftfahrzeugführer eine außerplanmäßige Landung durchgeführt hat','sich ein Luftfahrzeug in einer schwierigen Lage befindet','sich ein schwerkranker Passagier an Bord befindet']},
+  {id:138,cat:'notfall',q:'Ein Notanruf soll übermittelt werden ...',a:'auf der benutzten Frequenz oder einer Notfrequenz',o:['auf der benutzten Frequenz oder einer Notfrequenz','nur auf einer FIS-Frequenz','immer auf der Notfrequenz 121,500 MHz','auf einer SAR-Frequenz']},
+  {id:139,cat:'notfall',q:'Wie wird ein Notanruf eingeleitet?',a:'MAYDAY, vorzugsweise dreimaliges Aussenden',o:['MAYDAY, vorzugsweise dreimaliges Aussenden','MAYDAY NOTFALL MAYDAY','PAN PAN, vorzugsweise dreimaliges Aussenden','NOTFALL, vorzugsweise dreimaliges Aussenden']},
+  {id:140,cat:'notfall',q:'Welches der folgenden Signale ist ein Notsignal?',a:'Das durch Sprechfunk übermittelte Wort MAYDAY',o:['Das durch Sprechfunk übermittelte Wort MAYDAY','Das Abfeuern von grünen und roten Leuchtkugeln','Das durch Sprechfunk übermittelte Wort PAN PAN','Das wiederholte Ein- und Ausschalten der Landescheinwerfer oder der Positionslichter']},
+  {id:141,cat:'notfall',q:'Wie wird ein Dringlichkeitsanruf eingeleitet?',a:'PAN PAN, vorzugsweise dreimaliges Aussenden',o:['PAN PAN, vorzugsweise dreimaliges Aussenden','ACHTUNG, ICH HABE EINE DRINGENDE MELDUNG','DRINGLICHKEIT DRINGLICHKEIT','MAYDAY, vorzugsweise dreimaliges Aussenden']},
+  {id:142,cat:'notfall',q:'Das durch Sprechfunk übermittelte Signal PAN PAN bedeutet, dass ein Luftfahrzeug ...',a:'sich in einer schwierigen Lage befindet',o:['sich in einer schwierigen Lage befindet','versehentlich in ein Gebiet mit Flugbeschränkungen eingeflogen ist','entführt worden ist','in schwerer und unmittelbarer Gefahr ist']},
+  {id:143,cat:'notfall',q:'Welcher Transpondercode soll in einer Notlage gesendet werden?',a:'A 7700',o:['A 7700','A 7500','A 7600','A 7000']},
+  {id:144,cat:'notfall',q:'Was zeigt ein Luftfahrzeug an, wenn es den Transpondercode A 7700 sendet?',a:'Das Luftfahrzeug befindet sich in einer Notlage',o:['Das Luftfahrzeug befindet sich in einer Notlage','Das Luftfahrzeug hat Funkausfall','Das Luftfahrzeug wird entführt','Das Luftfahrzeug fliegt in den Luftraum E ein']},
+  {id:145,cat:'notfall',q:'Bei Funkausfall vor Erhalt der Einflugfreigabe in eine Kontrollzone hat der Pilot ...',a:'den Transpondercode Mode A 7600 zu schalten, sofern möglich; auf dem nächstgelegenen geeigneten Flugplatz zu landen; und der zuständigen Flugverkehrskontrollstelle schnellstmöglich die Landezeit zu übermitteln',o:['den Transpondercode Mode A 7600 zu schalten, sofern möglich; auf dem nächstgelegenen geeigneten Flugplatz zu landen; und der zuständigen Flugverkehrskontrollstelle schnellstmöglich die Landezeit zu übermitteln','den Transpondercode Mode A 7600 zu schalten; und ein geeignetes Notlandegelände zu erkunden','den Transpondercode Mode A 7600 zu schalten; und durch Vollkreise auf sich aufmerksam zu machen','den Transpondercode Mode A 7600 zu schalten; und nach einer Umkehrkurve zum Startflugplatz zurückzukehren']},
+  {id:146,cat:'notfall',q:'Was ist ein besonderes Merkmal der Blindsendung?',a:'Die Meldung ist zweimal zu übermitteln',o:['Die Meldung ist zweimal zu übermitteln','Am Ende wird das Rufzeichen des Luftfahrzeuges wiederholt','Die Meldung ist dreimal zu übermitteln','Am Ende wird das Rufzeichen der Bodenfunkstelle wiederholt']},
+  {id:147,cat:'notfall',q:'Was ist ein besonderes Merkmal der Blindsendung?',a:'Angabe des Zeitpunkts der nächsten beabsichtigten Übermittlung',o:['Angabe des Zeitpunkts der nächsten beabsichtigten Übermittlung','Der Meldung wird dreimal die Redewendung BLINDSENDUNG vorangestellt','Am Ende wird das Rufzeichen der Luftfunkstelle wiederholt','Am Ende einer Blindsendung wird das Rufzeichen der Bodenfunkstelle wiederholt']},
+  {id:148,cat:'notfall',q:'Welchen Transpondercode soll ein Luftfahrzeugführer bei Funkausfall senden?',a:'A 7600',o:['A 7600','A 7700','A 7500','A 7000']},
+  {id:149,cat:'notfall',q:'Was zeigt ein Luftfahrzeug an, wenn es den Transpondercode A 7600 sendet?',a:'Funkausfall',o:['Funkausfall','Erbitte Landeanweisungen','Notlage','Fliege in den Luftraum C ein']},
+  {id:150,cat:'betrieb',q:'Beobachtet ein Pilot ein auf ihn gerichtetes Lichtsignal - was hat er grundsätzlich zu beachten?',a:'Anweisungen über Funk haben Vorrang vor Signalen und Zeichen, ausgenommen rote Feuerwerkskörper',o:['Anweisungen über Funk haben Vorrang vor Signalen und Zeichen, ausgenommen rote Feuerwerkskörper','Auch akustische Signale können gegeben werden','Signale und Zeichen haben Vorrang vor Anweisungen über Funk','Bodensignale haben Vorrang vor Lichtsignalen']},
+  {id:151,cat:'betrieb',q:'Funkanweisungen haben Vorrang vor Licht- und Bodensignalen. Dies gilt nicht gegenüber ...',a:'roten Feuerwerkskörpern',o:['roten Feuerwerkskörpern','grünen Dauersignalen','roten Dauersignalen','roten Blinksignalen']},
+  {id:152,cat:'betrieb',q:'Ein Pilot hat vorrangig zu befolgen:',a:'Funkanweisungen',o:['Funkanweisungen','Lichtsignale','Bodensignale','Leuchtgeschosse die sich in rote und grüne Lichter und Sterne zerlegen']},
+  {id:153,cat:'technik',q:'In welchem Frequenzbereich wird der Sprechfunkverkehr im zivilen beweglichen Flugfunkdienst abgewickelt?',a:'117,975 MHz – 137,000 MHz',o:['117,975 MHz – 137,000 MHz','108,000 kHz – 136,000 kHz','108,000 MHz – 117,975 MHz','200 - 490 kHz']},
+  {id:154,cat:'technik',q:'Welcher Kanalabstand wird im Flugfunkdienst im unteren Luftraum betrieben?',a:'25 kHz + 8,33 kHz',o:['25 kHz + 8,33 kHz','25 MHz','25 MHz + 8,33 MHz','8,33 kHz']},
+  {id:155,cat:'technik',q:'In welcher Betriebsart wird der Sprechfunkverkehr im Flugfunkdienst durchgeführt?',a:'Wechselsprechverkehr',o:['Wechselsprechverkehr','Duplexverkehr','Wechsel- und Gegensprechverkehr','Gegensprechverkehr']},
+  {id:156,cat:'technik',q:'Welche Bezeichnung hat die Frequenz 121,500 MHz?',a:'Internationale Notfrequenz',o:['Internationale Notfrequenz','Schul- und Übungsfrequenz','Bord-Bord-Frequenz','Informationsfrequenz']},
+  {id:157,cat:'technik',q:'Welche der angegebenen Frequenzen entspricht der einer deutschen Bodenfunkstelle mit dem Rufzeichen "TURM"?',a:'118,305 MHz',o:['118,305 MHz','121,500 MHz','109,550 MHz','200 kHz']},
+  {id:158,cat:'technik',q:'Welche Frequenz wird im Kanalabstand von 8,33 kHz betrieben?',a:'134,555 MHz',o:['134,555 MHz','121,500 MHz','109,550 MHz','200 kHz']},
+  {id:159,cat:'technik',q:'Wodurch kann eine Sprechfunkfrequenz blockiert werden?',a:'Klemmen der Sprechtaste',o:['Klemmen der Sprechtaste','Zu lautes Sprechen','Zu leises Sprechen','Ein- und Ausschalten der Sprechfunkanlage']},
+  {id:160,cat:'technik',q:'Wie breiten sich Ultrakurzwellen (UKW) aus?',a:'Ähnlich wie das Licht, d.h. "quasi optisch"',o:['Ähnlich wie das Licht, d.h. "quasi optisch"','Wie Kurzwellen ohne atmosphärischen Einfluss','Als Bodenwellen entlang der Erdoberfläche','Sie werden von der Ionosphäre reflektiert']},
+  {id:161,cat:'technik',q:'Welche Phänomene können beim Flugfunk die Empfangsqualität der UKW beeinflussen?',a:'Die Flughöhe des Luftfahrzeuges und topographische Verhältnisse',o:['Die Flughöhe des Luftfahrzeuges und topographische Verhältnisse','Der Tag-/Nachteffekt','Die Ionosphäre','Atmosphärische Störungen, wie sie besonders bei Gewittern auftreten']},
+  {id:162,cat:'technik',q:'In welcher Situation kann die Funkverbindung auf 118,250 MHz als problemlos erwartet werden?',a:'Das Flugzeug befindet sich in ausreichend großer Höhe und nahe der Bodenfunkstelle',o:['Das Flugzeug befindet sich in ausreichend großer Höhe und nahe der Bodenfunkstelle','Das Luftfahrzeug befindet sich im Tiefflug in einem Tal, nahe der Bodenstation im "Funkschatten"','Das Flugzeug befindet sich im "Funkschatten" eines Berges, in weiter Entfernung','Das Flugzeug befindet sich in geringer Höhe sehr weit von der Bodenfunkstelle entfernt']},
+  {id:163,cat:'technik',q:'Welche maximal zu erwartende Entfernung für eine einwandfreie UKW-Funkverbindung über flachem Gelände in FL 65?',a:'Ca. 95 NM',o:['Ca. 95 NM','Ca. 20 NM','Ca. 10 NM','Ca. 150 NM']},
+  {id:164,cat:'betrieb',q:'Welche Flugverkehrsdienste gibt es?',a:'Flugverkehrskontrolldienst, Flugalarmdienst, Fluginformationsdienst, Flugverkehrsberatungsdienst',o:['Flugverkehrskontrolldienst, Flugalarmdienst, Fluginformationsdienst, Flugverkehrsberatungsdienst','FS-Kontrolldienst, Such- und Rettungsdienst, Fernmeldedienst','Alarm-, Rettungs-, Informations- und Beratungsdienst','Wetterdienst, Beratungsdienst, Such- und Rettungsdienst und Kontrolldienst']},
+  {id:165,cat:'betrieb',q:'Der Fluginformationsdienst hat u. a. folgende Aufgaben:',a:'Annahme und Weiterleitung von Flugplan- und Flugplanfolgemeldungen',o:['Annahme und Weiterleitung von Flugplan- und Flugplanfolgemeldungen','Wettermeldungen zu verbreiten','Freigaben zu erteilen','Den Such- und Rettungsdienst (SAR) zu organisieren']},
+  {id:166,cat:'rechtlich',q:'Wer ist für die Bewegungslenkung des Luftverkehrs in der Bundesrepublik Deutschland zuständig?',a:'Die vom Bundesaufsichtsamt für Flugsicherung zugelassenen Flugsicherungsorganisationen',o:['Die vom Bundesaufsichtsamt für Flugsicherung zugelassenen Flugsicherungsorganisationen','Das Luftfahrtbundesamt','Die Landesluftfahrtbehörden','Die DFS Deutsche Flugsicherung GmbH']},
+  {id:167,cat:'betrieb',q:'Wann steht der FIS dem Piloten zur Verfügung?',a:'Während des Fluges',o:['Während des Fluges','Während des Fluges, jedoch ausschließlich bei Flügen im Luftraum C und E','Vor Antritt eines Fluges','Während des Fluges, jedoch ausschließlich bei Flügen im Luftraum G']},
+  {id:168,cat:'rechtlich',q:'Zur Flugvorbereitung sind verpflichtet:',a:'Alle Luftfahrzeugführer',o:['Alle Luftfahrzeugführer','Nur Luftfahrzeugführer, die Überlandflüge durchführen','Nur die Luftfahrzeugführer von motorgetriebenen Luftfahrzeugen','Unerfahrene Luftfahrzeugführer']},
+  {id:169,cat:'betrieb',q:'Eine Wetterberatung ist grundsätzlich einzuholen bei ...',a:'Flügen, die über die Umgebung des Startflugplatzes hinausführen und vor Flügen nach Instrumentenflugregeln',o:['Flügen, die über die Umgebung des Startflugplatzes hinausführen und vor Flügen nach Instrumentenflugregeln','zweifelhaften Wetterlagen','Flügen, für die ein Flugplan zu übermitteln ist','Flügen zu gewerblichen Zwecken']},
+  {id:170,cat:'betrieb',q:'Worauf beziehen sich grundsätzlich Zeitangaben in der Luftfahrt?',a:'Koordinierte Weltzeit (UTC)',o:['Koordinierte Weltzeit (UTC)','Ortszeit','Zonenzeit (Z-Zeit)','MEZ bzw. MESZ']},
+  {id:171,cat:'betrieb',q:'Welches ist die Maßeinheit für die horizontale Geschwindigkeit in der Luftfahrt?',a:'Knoten',o:['Knoten','Meilen je Minute','Kilometer je Stunde','Meter je Minute']},
+  {id:172,cat:'betrieb',q:'Welches ist die Maßeinheit für die vertikale Geschwindigkeit in der Luftfahrt?',a:'Fuss je Minute',o:['Fuss je Minute','Fuss je Sekunde','Knoten','Meter je Minute']},
+  {id:173,cat:'betrieb',q:'Welches ist die Maßeinheit für Höhenangaben in der Luftfahrt?',a:'Fuss',o:['Fuss','Zoll','Meter','Kilometer']},
+  {id:174,cat:'betrieb',q:'Welches ist die Maßeinheit für Entfernungen in der Luftfahrt zum Zwecke der Navigation?',a:'Seemeile und Zehntel',o:['Seemeile und Zehntel','Knoten','Kilometer','Landmeile']},
+  {id:175,cat:'betrieb',q:'Welches ist die Maßeinheit für den Luftdruck in der Luftfahrt?',a:'Hektopascal',o:['Hektopascal','Atmosphäre Überdruck','Millimeter Quecksilber','Millibar']},
+  {id:176,cat:'luftraum',q:'Welche Mindesthöhe ist bei VFR-Flügen über Städte einzuhalten?',a:'300 m (1000 ft) über dem höchsten Hindernis innerhalb eines Umkreises von 600 m um das Luftfahrzeug',o:['300 m (1000 ft) über dem höchsten Hindernis innerhalb eines Umkreises von 600 m um das Luftfahrzeug','300 m (1000 ft) über dem Grund oder über dem höchsten Hindernis','600 m (2000 ft) über dem höchsten Hindernis innerhalb eines Umkreises von 150 m','600 m (2000 ft), wenn keine Hindernisse berührt werden']},
+  {id:177,cat:'luftraum',q:'Welcher Mindestabstand ist bei VFR-Flügen über Boden oder Wasser in einer Höhe von 150 m (500 ft) zum höchsten Hindernis einzuhalten?',a:'150 m (500 ft) um das Luftfahrzeug',o:['150 m (500 ft) um das Luftfahrzeug','300 m (1000 ft) um das Luftfahrzeug','1,5 km zum nächsten Hindernis','Kein Abstand erforderlich']},
+  {id:178,cat:'luftraum',q:'Ein motorgetriebenes Luftfahrzeug und ein Segelflugzeug nähern sich im Gegenflug. Wer muss ausweichen?',a:'Beide nach rechts',o:['Beide nach rechts','Das Segelflugzeug','Das schneller fliegende Luftfahrzeug','Das motorgetriebene Luftfahrzeug']},
+  {id:179,cat:'luftraum',q:'Luftfahrzeuge, die Gegenstände schleppen, haben Vorflugrecht vor ...',a:'motorgetriebenen Luftfahrzeugen',o:['motorgetriebenen Luftfahrzeugen','allen Luftfahrzeugen','Segelflugzeugen','Motorseglern mit abgeschaltetem Motor']},
+  {id:180,cat:'luftraum',q:'Ein Pilot beobachtet einen Motorsegler (Motor in Betrieb), der von links kommt und seinen Flugweg kreuzen wird. Wer muss ausweichen?',a:'Der Motorsegler dem Flugzeug',o:['Der Motorsegler dem Flugzeug','Das Flugzeug dem Motorsegler','Das Luftfahrzeug mit der höheren Geschwindigkeit','Beide Luftfahrzeuge müssen die Kurse ändern']},
+  {id:181,cat:'luftraum',q:'Bei Luftfahrzeugen im Endanflug hat ...',a:'das tiefer fliegende Luftfahrzeug Vorflugrecht',o:['das tiefer fliegende Luftfahrzeug Vorflugrecht','das höher fliegende Luftfahrzeug Vorflugrecht','in jedem Fall das mehrsitzige Luftfahrzeug Vorflugrecht','das tiefer fliegende Luftfahrzeug eine lange Landung zu machen']},
+  {id:182,cat:'luftraum',q:'Wann müssen alle Luftfahrzeuge Positionslichter einschalten?',a:'Nachts',o:['Nachts','Bei Nacht und schlechten Sichtverhältnissen','Von SS+30 bis SR','Von SS+30 bis SR+30']},
+  {id:183,cat:'luftraum',q:'Während des Fluges haben alle Luftfahrzeuge mit Zusammenstoß-Warnlichtern (anti-collision lights) diese ...',a:'am Tag und in der Nacht zu führen',o:['am Tag und in der Nacht zu führen','nur in der Nacht zu führen','vom Start bis zur Landung in der Nacht bei ungünstigen Sichtverhältnissen zu führen','nur am Tage bei ungünstigen Sichtverhältnissen zu führen']},
+  {id:184,cat:'betrieb',q:'Ein waagerechtes quadratisches rotes Feld mit zwei gelben Diagonalstreifen in der Signalfläche bedeutet:',a:'Landeverbot für längere Zeit',o:['Landeverbot für längere Zeit','Der Flugplatz ist für kurze Zeit gesperrt','Der Flugplatz ist für längere Zeit unbenutzbar','Start- und Landeverbot für längere Zeit']},
+  {id:185,cat:'betrieb',q:'Eine waagerechte weiße Fläche in Form einer Hantel in der Signalfläche bedeutet:',a:'Zum Starten, Landen und Rollen dürfen nur Start- und Landebahnen und Rollbahnen benutzt werden',o:['Zum Starten, Landen und Rollen dürfen nur Start- und Landebahnen und Rollbahnen benutzt werden','Zum Starten ist die Rollbahn zu benutzen','Landeverbot für Luftsportgeräte','Rollbahn darf zur Zeit nicht benutzt werden']},
+  {id:186,cat:'betrieb',q:'Ein weißes oder orangefarbenes "T" (Lande-T) bedeutet:',a:'Starts und Landungen sind parallel zum Längsbalken des Lande-T in Richtung auf den Querbalken durchzuführen',o:['Starts und Landungen sind parallel zum Längsbalken des Lande-T in Richtung auf den Querbalken durchzuführen','Startverbot','Starts und Landungen nur auf der Piste durchführen','Neben dem Lande-T aufsetzen']},
+  {id:187,cat:'betrieb',q:'Eine zweistellige Zahl auf einer Tafel am Kontrollturm bedeutet:',a:'Die Startrichtung, gerundet auf die nächstliegenden 10° der missweisenden Kompassrose',o:['Die Startrichtung, gerundet auf die nächstliegenden 10° der missweisenden Kompassrose','Die beiden Endziffern des QNH','Die Landerichtung, abgerundet auf den missweisenden Steuerkurs','Die Temperatur']},
+  {id:188,cat:'betrieb',q:'Ein nach rechts abgewinkelter Pfeil in auffallender Farbe am Ende der Piste bedeutet:',a:'Nach dem Start und vor der Landung sind Richtungsänderungen nur nach rechts erlaubt',o:['Nach dem Start und vor der Landung sind Richtungsänderungen nur nach rechts erlaubt','Rollbewegungen nur nach rechts ausführen','Rechts neben der Bahn starten und landen','Vorflugrecht von rechts kommender Luftfahrzeuge beachten']},
+  {id:189,cat:'betrieb',q:'Welche Bedeutung hat ein grünes Dauersignal, das auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Landung freigegeben',o:['Landung freigegeben','Auf diesem Flugplatz landen und zum Vorfeld rollen','Platzrunde fortsetzen, anderes Luftfahrzeug hat Vorflug','Zum Startflugplatz zurückkehren']},
+  {id:190,cat:'betrieb',q:'Welche Bedeutung hat ein rotes Dauersignal, das auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Anderes Luftfahrzeug hat Vorflug, Platzrunde fortsetzen',o:['Anderes Luftfahrzeug hat Vorflug, Platzrunde fortsetzen','Zwecks Landung zurückkehren','Nicht landen, Flugplatz unbenutzbar','Ungeachtet aller früheren Anweisungen zur Zeit nicht landen']},
+  {id:191,cat:'betrieb',q:'Welche Bedeutung hat ein grünes Blinksignal, das auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Zwecks Landung zurückkehren (Lande- und Rollfreigaben werden zum gegebenen Zeitpunkt erteilt)',o:['Zwecks Landung zurückkehren (Lande- und Rollfreigaben werden zum gegebenen Zeitpunkt erteilt)','Landung freigegeben','Platzrunde fortsetzen, anderes Luftfahrzeug hat Vorflug','Auf diesem Flugplatz landen und zum Vorfeld rollen']},
+  {id:192,cat:'betrieb',q:'Welche Bedeutung hat ein rotes Blinksignal, das auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Nicht landen, Flugplatz unbenutzbar',o:['Nicht landen, Flugplatz unbenutzbar','Platzrunde fortsetzen','Platzrunde verlassen','Sofort landen']},
+  {id:193,cat:'betrieb',q:'Welche Bedeutung hat ein weißes Blinksignal, das auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Auf diesem Flugplatz landen und zum Vorfeld rollen',o:['Auf diesem Flugplatz landen und zum Vorfeld rollen','Auf diesem Flugplatz nicht landen','Platzrunde verlassen','Platzrunde fortsetzen']},
+  {id:194,cat:'betrieb',q:'Welche Bedeutung hat ein roter Feuerwerkskörper, der auf ein Luftfahrzeug im Flug gerichtet ist?',a:'Ungeachtet aller früheren Anweisungen und Freigaben zur Zeit nicht landen',o:['Ungeachtet aller früheren Anweisungen und Freigaben zur Zeit nicht landen','Gefahr! Platzrunde sofort verlassen','Flugbeschränkungsgebiet! Gebiet sofort verlassen','Gefahrengebiet! Gebiet sofort verlassen']},
+  {id:195,cat:'betrieb',q:'Welche Bedeutung hat ein grünes Dauersignal, das auf ein Luftfahrzeug am Boden gerichtet ist?',a:'Start freigegeben',o:['Start freigegeben','Halt!','Zum Ausgangspunkt auf dem Flugplatz zurückkehren','Rollerlaubnis erteilt']},
+  {id:196,cat:'betrieb',q:'Welche Bedeutung hat ein rotes Dauersignal, das auf ein Luftfahrzeug am Boden gerichtet ist?',a:'Halt!',o:['Halt!','Benutzte Landefläche freimachen','Piste verlassen','Rollbahn verlassen']},
+  {id:197,cat:'betrieb',q:'Welche Bedeutung hat ein grünes Blinksignal, das auf ein Luftfahrzeug am Boden gerichtet ist?',a:'Rollerlaubnis erteilt',o:['Rollerlaubnis erteilt','Start freigegeben','Piste frei von Hindernissen','Zum Ausgangspunkt zurückrollen']},
+  {id:198,cat:'betrieb',q:'Welche Bedeutung hat ein rotes Blinksignal, das auf ein Luftfahrzeug am Boden gerichtet ist?',a:'Benutzte Landefläche freimachen',o:['Benutzte Landefläche freimachen','Halt!','Start freigegeben','Zum Ausgangspunkt zurückrollen']},
+  {id:199,cat:'betrieb',q:'Welche Bedeutung hat ein weißes Blinksignal, das auf ein Luftfahrzeug am Boden gerichtet ist?',a:'Zum Ausgangspunkt auf dem Flughafen zurückkehren',o:['Zum Ausgangspunkt auf dem Flughafen zurückkehren','Start freigegeben','Ungeachtet aller früheren Anweisungen zur Zeit nicht rollen und nicht starten','Benutzte Landefläche freimachen']},
+  {id:200,cat:'luftraum',q:'Flugplatzverkehr bezieht sich auf ...',a:'den gesamten Verkehr auf dem Rollfeld und alle in der Nähe eines Flugplatzes fliegenden Luftfahrzeuge',o:['den gesamten Verkehr auf dem Rollfeld und alle in der Nähe eines Flugplatzes fliegenden Luftfahrzeuge','alle Luftfahrzeuge, die sich in der Platzrunde befinden','alle Luftfahrzeuge, die sich auf dem Rollfeld befinden','den Verkehr auf dem Rollfeld und alle Luftfahrzeuge, die in die Platzrunde einfliegen']},
+  {id:201,cat:'luftraum',q:'Wann befindet sich ein Luftfahrzeug im "Gegenanflug 16"?',a:'Wenn es einen Kurs von 340° fliegt und der Flugplatz links vom Luftfahrzeug liegt',o:['Wenn es einen Kurs von 340° fliegt und der Flugplatz links vom Luftfahrzeug liegt','Wenn es einen Kurs von 340° fliegt und der Flugplatz rechts liegt','Wenn es einen Kurs von 160° fliegt und der Flugplatz links liegt','Wenn es einen Kurs von 160° fliegt und der Flugplatz rechts liegt']},
+  {id:202,cat:'luftraum',q:'Richtungsänderungen in der Platzrunde sind normalerweise ...',a:'in Linkskurven auszuführen',o:['in Linkskurven auszuführen','nach Süden auszuführen','in Rechtskurven auszuführen','nach Norden auszuführen']},
+  {id:203,cat:'luftraum',q:'Richtungsänderungen beim An- und Abflug sind normalerweise ...',a:'in Linkskurven auszuführen',o:['in Linkskurven auszuführen','nach Süden auszuführen','in Rechtskurven auszuführen','nach Norden auszuführen']},
+  {id:204,cat:'betrieb',q:'Wessen Signale und Zeichen hat der Pilot auf dem Vorfeld und den Abstellflächen zu befolgen?',a:'des Flugplatzunternehmers',o:['des Flugplatzunternehmers','des Kontrollturmes','der Landesluftfahrtbehörde','des Luftfahrtbundesamtes']},
+  {id:205,cat:'notfall',q:'Zu einem Flugplatz mit Flugverkehrskontrolle - mit dem Kontrollturm kann keine Funkverbindung hergestellt werden. Was muss der Pilot beachten?',a:'Er muss auf einem Flugplatz außerhalb der Kontrollzone landen. Nur aus flugbetrieblichen Gründen darf der Flug in die CTR fortgesetzt werden',o:['Er muss auf einem Flugplatz außerhalb der Kontrollzone landen. Nur aus flugbetrieblichen Gründen darf der Flug in die CTR fortgesetzt werden','Er muss in jedem Fall zum Ausweichflugplatz weiterfliegen','Er darf in keinem Fall in die Kontrollzone einfliegen','Er muss eine Blindsendung absetzen und den Flug entsprechend der VFR-Einflugstrecke fortsetzen']},
+  {id:206,cat:'notfall',q:'Das Sprechfunkgerät fällt aus, nachdem der Pilot eine Freigabe zum Einflug in die Kontrollzone erhalten hat. Wie verhält er sich?',a:'Den Flug entsprechend der Flugverkehrskontrollfreigabe fortsetzen',o:['Den Flug entsprechend der Flugverkehrskontrollfreigabe fortsetzen','Auf einem Flugplatz außerhalb der Kontrollzone landen','Den Flug zum Ausweichflugplatz fortsetzen','10 Minuten außerhalb der Kontrollzone kreisen und dann den Anflug fortsetzen']},
+  {id:207,cat:'luftraum',q:'Die Flugsicht wird definiert als die ...',a:'Sicht in Flugrichtung aus dem Cockpit eines im Flug befindlichen Luftfahrzeuges',o:['Sicht in Flugrichtung aus dem Cockpit eines im Flug befindlichen Luftfahrzeuges','maximale Voraussicht aus dem Cockpit eines Luftfahrzeuges am Boden','Sicht aus dem Cockpit eines Luftfahrzeuges im Flug zum Erdboden','mittlere Schrägsicht aus dem Cockpit eines Luftfahrzeuges im Flug']},
+  {id:208,cat:'luftraum',q:'Der horizontale Mindestabstand zu Wolken bei einem VFR-Flug im Luftraum D (CTR) beträgt:',a:'1500 m',o:['1500 m','300 m','1500 ft','300 ft']},
+  {id:209,cat:'luftraum',q:'Im Luftraum E unterhalb FL 100 sind VFR-Flüge so durchzuführen, dass ...',a:'der Pilot eine Flugsicht von mindestens 5 km hat und das Luftfahrzeug von den Wolken in waagerechter Richtung mindestens 1500 m, in senkrechter Richtung mindestens 300 m (1000 ft) Abstand hält',o:['der Pilot eine Flugsicht von mindestens 5 km hat und das Luftfahrzeug von den Wolken in waagerechter Richtung mindestens 1500 m, in senkrechter Richtung mindestens 300 m (1000 ft) Abstand hält','Flugsicht mindestens 8 km, Wolkenabstand waagerecht 500 m, senkrecht 300 m','Flugsicht mindestens 5 km, Wolkenabstand waagerecht 300 m, senkrecht 300 ft','Flugsicht mindestens 8 km, Wolkenabstand waagerecht 1500 m, senkrecht 300 m']},
+  {id:210,cat:'luftraum',q:'VFR-Flüge im Luftraum G in und unter 3000 ft AMSL/1000 ft AGL mit ≤140 kt IAS - Voraussetzungen?',a:'Erdsicht, Flugsicht mindestens 1500 m, frei von Wolken',o:['Erdsicht, Flugsicht mindestens 1500 m, frei von Wolken','Bodensicht mindestens 1500 m, Wolken dürfen nicht berührt werden','Bodensicht mindestens 5 km, Hauptwolkenuntergrenze mindestens 1500 ft','Flugsicht mindestens 1500 m, Abstand von Wolken waagerecht 300 m, senkrecht 2000 ft']},
+  {id:211,cat:'luftraum',q:'Ist für VFR-Flüge im Luftraum G in und unter 3000 ft AMSL/1000 ft AGL ein bestimmter Wolkenabstand vorgeschrieben?',a:'Nein',o:['Nein','Ja, mindestens 1500 m in waagerechter und mindestens 1000 ft in senkrechter Richtung','Ja, mindestens 1500 m in waagerechter Richtung','Ja, mindestens 1,5 NM in waagerechter Richtung']},
+  {id:212,cat:'luftraum',q:'In welchem Luftraum können Sonderflüge nach Sichtflugregeln durchgeführt werden?',a:'Im Luftraum D (CTR)',o:['Im Luftraum D (CTR)','In den Lufträumen C und D','Im Luftraum E','Nur in FL 100 und darüber']},
+  {id:213,cat:'luftraum',q:'Wann ist mit der Standard-Höhenmessereinstellung bei VFR-Flügen zu fliegen?',a:'Bei Flügen oberhalb 5000 ft AMSL oder 2000 ft AGL, sofern diese Flughöhe 5000 ft AMSL überschreitet',o:['Bei Flügen oberhalb 5000 ft AMSL oder 2000 ft AGL, sofern diese Flughöhe 5000 ft AMSL überschreitet','Bei Flügen unter 5000 ft AMSL','Bei Flügen bis zu 5000 ft AGL','Hierfür gelten unterschiedliche Vorschriften']},
+  {id:214,cat:'luftraum',q:'Bei VFR-Flügen oberhalb 5000 ft AMSL oder 2000 ft AGL ist der Höhenmesser einzustellen auf:',a:'1013,2 hPa',o:['1013,2 hPa','QFF','QNH','QFE']},
+  {id:215,cat:'luftraum',q:'Bei VFR-Flügen bis zu 5000 ft AMSL oder 2000 ft AGL ist der Höhenmesser einzustellen auf:',a:'das QNH des zur Flugstrecke nächstgelegenen Flugplatzes mit Flugverkehrskontrolle',o:['das QNH des zur Flugstrecke nächstgelegenen Flugplatzes mit Flugverkehrskontrolle','das QNH des nächstgelegenen Flughafens','das QFE des nächstgelegenen Flugplatzes mit Flugverkehrskontrolle','1013,2 hPa']},
+  {id:216,cat:'luftraum',q:'Woraus ergibt sich die Festlegung des Sektors für die Halbkreisflughöhen nach Sichtflugregeln?',a:'Aus dem missweisenden Kurs über Grund',o:['Aus dem missweisenden Kurs über Grund','Aus dem rechtweisenden Kartenkurs','Aus dem Kompasskurs','Aus dem rechtweisenden Kurs über Grund']},
+  {id:217,cat:'luftraum',q:'Welche Flugfläche/n bei einem missweisenden Kurs über Grund von 135°?',a:'55, 75, 95',o:['55, 75, 95','65, 85, 105','50, 70, 90','60, 80, 100']},
+  {id:218,cat:'luftraum',q:'Welche Fluginformationsgebiete (FIR) unter deutscher Zuständigkeit gibt es im unteren Luftraum?',a:'Bremen, Langen, München',o:['Bremen, Langen, München','Berlin, Hamburg, Frankfurt, München','Bremen, Berlin, Hannover, Düsseldorf, Stuttgart','Berlin, Hannover, Maastricht, Rhein, Langen']},
+  {id:219,cat:'luftraum',q:'Eine Zone mit Funkkommunikationspflicht (RMZ) reicht bis zu einer Höhe von:',a:'1000 ft AGL',o:['1000 ft AGL','1000 ft AMSL','3000 ft AMSL','2500 ft AGL']},
+  {id:220,cat:'luftraum',q:'Eine Zone mit Funkkommunikationspflicht (RMZ) reicht vom Boden bis …',a:'1000 ft AGL',o:['1000 ft AGL','1700 ft AGL','3000 ft AGL','2500 ft AGL']},
+  {id:221,cat:'luftraum',q:'In Deutschland sind Kontrollzonen klassifiziert ...',a:'als Luftraum D',o:['als Luftraum D','überwiegend als Luftraum D, nur einige als Luftraum C','um Flughäfen als Luftraum C, die übrigen als Luftraum D','um Militärflugplätze als Luftraum B, um Flughäfen als Luftraum C, alle übrigen als Luftraum D']},
+  {id:222,cat:'luftraum',q:'Eine mit "HX" gekennzeichnete Kontrollzone kann außerhalb der Betriebszeit ohne Freigabe durchflogen werden, wenn der Pilot ...',a:'sich vor dem Durchflug von der zuständigen Flugplatzkontrolle oder beim FIS die Nichtwirksamkeit bestätigen lässt',o:['sich vor dem Durchflug von der zuständigen Flugplatzkontrolle oder beim FIS die Nichtwirksamkeit bestätigen lässt','eine schriftliche Zustimmung des Flugplatzkommandanten erhalten hat','sich bei der militärischen Flugleitung die Nichtwirksamkeit bestätigen lässt','sich über die Nichtwirksamkeit im Luftfahrthandbuch informiert']},
+  {id:223,cat:'luftraum',q:'Welche Luftraumklassen sind kontrollierter Luftraum?',a:'C, D, E',o:['C, D, E','C, D, F','E, F, G','C, E, F']},
+  {id:224,cat:'luftraum',q:'Der Luftraum E erstreckt sich, soweit nicht anders klassifiziert ...',a:'ab 1000 ft AGL und 1700 ft AGL, ansonsten ab 2500 ft AGL bis FL 100',o:['ab 1000 ft AGL und 1700 ft AGL, ansonsten ab 2500 ft AGL bis FL 100','ab 1000 ft und 1700 ft AGL, ansonsten ab 5000 ft AMSL bis FL 200','von 1000 ft und 1700 ft AGL bis 5000 ft AMSL','ab 1000 ft und 1700 ft AGL, ansonsten ab 2500 ft AGL bis FL 200']},
+  {id:225,cat:'luftraum',q:'Ein mit "ED-R..." gekennzeichnetes Gebiet ist ein ...',a:'Gebiet mit Flugbeschränkungen',o:['Gebiet mit Flugbeschränkungen','Gefahrengebiet','Sperrgebiet','Segelflugbeschränkungsgebiet']},
+  {id:226,cat:'luftraum',q:'Ein mit "ED-D..." gekennzeichnetes Gebiet ist ein ...',a:'Gefahrengebiet',o:['Gefahrengebiet','Gebiet mit Flugbeschränkungen','Truppenübungsplatz','Sperrgebiet']},
+  {id:227,cat:'technik',q:'Wann müssen Luftfahrzeuge für Überlandflüge nach VFR mit einem UKW-Sende- und Empfangsgerät ausgerüstet sein?',a:'Stets',o:['Stets','Nur bei Flügen von und zu Flugplätzen ohne Flugverkehrskontrolle','Nur bei Auslandsflügen','Nur bei Flügen zu kontrollierten Flugplätzen']},
+  {id:228,cat:'luftraum',q:'VFR-Flüge über geschlossenen Wolkendecken dürfen durchgeführt werden:',a:'wenn das Luftfahrzeug u.a. mit einem UKW-Sende-/Empfangsgerät und einer VOR-Navigations-Empfangsanlage oder mit einem automatischen Funkpeilgerät (ADF) ausgerüstet ist',o:['wenn das Luftfahrzeug u.a. mit einem UKW-Sende-/Empfangsgerät und einer VOR-Navigations-Empfangsanlage oder mit einem automatischen Funkpeilgerät (ADF) ausgerüstet ist','grundsätzlich nicht','nur mit einer CVFR-Berechtigung','nur nach Freigabe durch die Flugverkehrskontrolle']},
+  {id:229,cat:'luftraum',q:'Bei VFR-Flügen müssen Luftfahrzeuge mit einem Transponder ausgerüstet sein …',a:'in den Lufträumen C sowie D (nicht Kontrollzone)',o:['in den Lufträumen C sowie D (nicht Kontrollzone)','in den Lufträumen C sowie G','nicht erforderlich','in den Lufträumen G sowie D (nicht Kontrollzone)']},
+  {id:230,cat:'luftraum',q:'Welcher Mode/Code muss von motorgetriebenen Luftfahrzeugen bei VFR-Flügen oberhalb 5000 ft AMSL oder oberhalb 3500 ft AGL unaufgefordert geschaltet werden?',a:'A/C 7000',o:['A/C 7000','Der Transponder darf unaufgefordert nicht geschaltet werden','A/C 7600','A/C 7700']},
+  {id:231,cat:'luftraum',q:'Beim Sinkflug von FL 85 auf 3500 ft AMSL - wie sind Höhenmesser und Transponder einzustellen?',a:'QNH einstellen und den Mode/Code A/C 7000 beibehalten',o:['QNH einstellen und den Mode/Code A/C 7000 beibehalten','QNH 1013,2 hPa einstellen und Transponder auf "STAND-BY" schalten','QNH einstellen und Mode/Code A/C 7600 beibehalten','1013,2 hPa einstellen und Mode/Code A/C 7600 einschalten']},
+  {id:232,cat:'luftraum',q:'In Gebieten mit Transponderpflicht (TMZ) müssen Luftfahrzeuge bei VFR-Flügen mit einem ...',a:'Transponder mit automatischer Höhenübermittlung ausgerüstet sein und den für die jeweilige TMZ veröffentlichten bzw. den von der Flugsicherung zugewiesenen Code unaufgefordert abstrahlen',o:['Transponder mit automatischer Höhenübermittlung ausgerüstet sein und den für die jeweilige TMZ veröffentlichten bzw. den von der Flugsicherung zugewiesenen Code unaufgefordert abstrahlen','Transponder ausgerüstet sein und den Code 7500 unaufgefordert abstrahlen','Transponder ausgerüstet sein und den Code 7600 unaufgefordert abstrahlen','Transponder ausgerüstet sein und den Code 7700 unaufgefordert abstrahlen']},
+  {id:233,cat:'nav',q:'Was versteht man unter dem Begriff "EIGENPEILUNG"?',a:'Standortbestimmung durch bordeigene Navigationsempfangsanlagen',o:['Standortbestimmung durch bordeigene Navigationsempfangsanlagen','Terrestrische Navigation','Standortbestimmung durch bodenseitigen Einsatz von Radar','Kreuzpeilung mittels Peilfunkstellen']},
+  {id:234,cat:'nav',q:'Mit welcher Navigationsfunkanlage kann Fremdpeilung durchgeführt werden?',a:'UKW-Peilstelle (VDF)',o:['UKW-Peilstelle (VDF)','VOR/DME-Anlage','NDB-Anlage','TACAN-Anlage']},
+  {id:235,cat:'nav',q:'Die Kennung eines UKW-Drehfunkfeuers (VOR) besteht in der Regel aus ...',a:'drei Buchstaben im Morsecode',o:['drei Buchstaben im Morsecode','einem Blinkzeichen','einem Rufnamen','zwei Buchstaben im Morsecode']},
+  {id:236,cat:'nav',q:'Ein VOR-Anzeigegerät ist ein "Kommandogerät", wenn mit ...',a:'FROM-Anzeige von der VOR-Anlage abgeflogen wird',o:['FROM-Anzeige von der VOR-Anlage abgeflogen wird','TO-Anzeige von der VOR-Anlage abgeflogen wird','OFF-Anzeige die VOR-Anlage angeflogen wird','FROM-Anzeige die VOR-Anlage angeflogen wird']},
+  {id:237,cat:'nav',q:'Wovon ist die Empfangsreichweite eines UKW-Drehfunkfeuers (VOR) abhängig?',a:'Von der Flughöhe des Luftfahrzeuges',o:['Von der Flughöhe des Luftfahrzeuges','Von der Art des Luftfahrzeugmusters','Von der Geschwindigkeit des Luftfahrzeuges','Von dem Kurs des Luftfahrzeuges']},
+  {id:238,cat:'nav',q:'Der mit "OBS" gekennzeichnete Knopf am VOR-Anzeigegerät ist der ...',a:'Kurswähler',o:['Kurswähler','Frequenzwahlschalter','Lautstärkeregler','TO/FROM-Umschalter']},
+  {id:239,cat:'nav',q:'Auf welche Richtung ist das Radial einer VOR-Station bezogen?',a:'missweisend Nord',o:['missweisend Nord','QTE','die Flugzeuglängsachse','rechtweisend Nord']},
+  {id:240,cat:'nav',q:'UKW-Drehfunkfeuer (VOR) arbeiten im Frequenzbereich von ...',a:'108 MHz bis 117,975 MHz',o:['108 MHz bis 117,975 MHz','200 MHz bis 1750 MHz','108 MHz bis 112 MHz','118 MHz bis 137 MHz']},
+  {id:241,cat:'nav',q:'Wann wechselt am VOR-Anzeigegerät die Richtungsanzeige von "TO" auf "FROM"?',a:'Beim Überfliegen der VOR-Station',o:['Beim Überfliegen der VOR-Station','Bei einer Änderung des Steuerkurses um 90°','Bei einer Änderung des Steuerkurses um 180°','Beim Betätigen des IDENT-Knopfes']},
+  {id:242,cat:'nav',q:'VOR-Anflug 320° bei "TO"-Anzeige - CDI wandert nach links aus. Wo befindet sich das Luftfahrzeug?',a:'Rechts vom Radial',o:['Rechts vom Radial','Links vom Radial','Auf dem Radial','Südlich des Radiales']},
+  {id:243,cat:'nav',q:'Ein Luftfahrzeug will eine VOR-Station auf dem kürzesten Weg anfliegen. Kurswähler drehen bis ...',a:'die vertikale Nadel in Mittelstellung ist und der Richtungsanzeiger "TO" anzeigt. Der Zahlenwert gibt den direkten Kurs zur Station an',o:['die vertikale Nadel in Mittelstellung ist und der Richtungsanzeiger "TO" anzeigt. Der Zahlenwert gibt den direkten Kurs zur Station an','die vertikale Nadel in Mittelstellung ist und "FROM" anzeigt. Der Zahlenwert gibt den direkten Kurs an','die horizontale Nadel in der Mitte steht und die OFF-Anzeige verschwindet','die vertikale Nadel bei "TO-Anzeige" voll links ausschlägt']},
+  {id:244,cat:'nav',q:'Wie groß ist die Kursablage pro Punkt (dot) auf dem VOR-Anzeigegerät?',a:'2°',o:['2°','10°','5°','1°']},
+  {id:245,cat:'nav',q:'Auf der Luftfahrtkarte finden Sie "TRENT 108,45 TRT". Um welche Art von Funknavigationsanlage handelt es sich?',a:'UKW-Drehfunkfeuer (VOR)',o:['UKW-Drehfunkfeuer (VOR)','Peilfunkanlage (VDF)','Ungerichtetes Funkfeuer (NDB)','Instrumenten-Landesystem (ILS)']},
+  {id:246,cat:'nav',q:'Beim VOR-Anflug erscheint kurz vor der berechneten Überflugzeit die OFF-Flagge. Wahrscheinliche Ursache?',a:'Das Flugzeug befindet sich über der Station',o:['Das Flugzeug befindet sich über der Station','Der VOR-Empfänger ist ausgefallen','Die VOR-Station ist ausgefallen','Die TO/FROM-Anzeige ist defekt']},
+  {id:247,cat:'nav',q:'Die Richtung eines VOR-Leitstrahls (Radial) entspricht dem ...',a:'QDR',o:['QDR','QDM','QTE','QUJ']},
+  {id:248,cat:'nav',q:'Welche Kennung hat ein ungerichtetes Funkfeuer (NDB)?',a:'Zwei oder drei Buchstaben im Morsecode',o:['Zwei oder drei Buchstaben im Morsecode','Zwei oder drei Ziffern im Morsecode','Ziffern und Buchstaben im Morsecode','Eine Sprachkennung']},
+  {id:249,cat:'nav',q:'Ungerichtete Funkfeuer (NDB) haben eine festgelegte Betriebsentfernung von ...',a:'15 NM bis 100 NM',o:['15 NM bis 100 NM','höchstens 25 NM','mindestens 60 NM','weit über 100 NM']},
+  {id:250,cat:'nav',q:'Ungerichtete Funkfeuer (NDB) arbeiten im ...',a:'LW- und MW-Bereich',o:['LW- und MW-Bereich','UKW-Bereich','KW-Bereich','UHF-Bereich']},
+  {id:251,cat:'nav',q:'Mit welcher bordseitigen Navigationsempfangsanlage kann ein NDB empfangen werden?',a:'Funkkompass (ADF)',o:['Funkkompass (ADF)','Marker-Empfänger','VOR-Empfänger','ILS-Empfänger']},
+  {id:252,cat:'nav',q:'Welcher Winkel wird am Anzeigegerät (RBI) des Funkkompasses (ADF) angezeigt?',a:'Der Winkel zwischen Flugzeuglängsachse und der Richtung zu dem eingestellten NDB',o:['Der Winkel zwischen Flugzeuglängsachse und der Richtung zu dem eingestellten NDB','Der Winkel zwischen recht- und missweisend Nord','Der Winkel zwischen geographisch Nord und dem eingestellten NDB','Der Winkel zwischen missweisend Nord und der Flugzeuglängsachse']},
+  {id:253,cat:'nav',q:'Missweisender Steuerkurs 155°, Bezugspeilung 025°. Wie groß ist das QDM?',a:'180°',o:['180°','360°','130°','025°']},
+  {id:254,cat:'nav',q:'Welche Ausrüstung ist erforderlich, um mit Hilfe von Peilfunkstellen navigieren zu können?',a:'UKW-Sprechfunkgerät',o:['UKW-Sprechfunkgerät','Transponder','Funkkompass','VOR-Empfänger']},
+  {id:255,cat:'nav',q:'Missweisender Steuerkurs 090°, übermitteltes QDR 180°. Wo liegt die Peilfunkstelle?',a:'Links vom Flugweg',o:['Links vom Flugweg','Rechts vom Flugweg','Voraus','Südlich vom Flugweg']},
+  {id:256,cat:'nav',q:'Von einer Bodenfunkstelle mit UKW-Peiler erhält man ein QDM von 225°. Wo befindet sich das Luftfahrzeug?',a:'Nordöstlich der Station',o:['Nordöstlich der Station','Südwestlich der Station','Südöstlich der Station','Nordwestlich der Station']},
+  {id:257,cat:'nav',q:'Wozu dient Sekundärradar in der Flugsicherung?',a:'Zur Identifizierung von Luftfahrzeugen und Erlangung zusätzlicher Informationen über VFR-Flüge',o:['Zur Identifizierung von Luftfahrzeugen und Erlangung zusätzlicher Informationen über VFR-Flüge','Zur frühzeitigen Erkennung von Schlechtwettergebieten','Zur Erkennung der wahren Eigengeschwindigkeit von Luftfahrzeugen','Zur Standortbestimmung durch den Piloten']},
+  {id:258,cat:'nav',q:'Welche Angaben kann ein Pilot von einer Flugverkehrskontrollstelle mit Radar erhalten?',a:'Angaben über den Standort des Luftfahrzeuges',o:['Angaben über den Standort des Luftfahrzeuges','die wahre Eigengeschwindigkeit','die Fluglage des Luftfahrzeuges','den beabsichtigten Flugweg']},
+  {id:259,cat:'nav',q:'Die Abkürzung "GPS" bedeutet in der Luftfahrt:',a:'Global Positioning System',o:['Global Positioning System','Geographisches Punktsystem','Großkreis-Planungsschablone','GAT-Positionierungssystem']},
+  {id:260,cat:'nav',q:'Die Abkürzung "GNSS" bedeutet in der Luftfahrt:',a:'Globales Satellitennavigationssystem',o:['Globales Satellitennavigationssystem','Weltweites System zur Vereinheitlichung der terrestrischen Navigation','Verfahren zur Positionierung von Flugzeugen auf dem Vorfeld','Bodenabhängiges Funknavigationssystem']},
+  {id:261,cat:'nav',q:'Wozu dienen GPS-Empfänger an Bord von Luftfahrzeugen?',a:'Der Auswertung und Anzeige von Satellitensignalen zu navigatorischen Zwecken (z.B. Position, Kurs, Geschwindigkeit, Entfernung)',o:['Der Auswertung und Anzeige von Satellitensignalen zu navigatorischen Zwecken (z.B. Position, Kurs, Geschwindigkeit, Entfernung)','Der Standortbestimmung mittels bordeigenem Radar','Der Bestimmung des Abstandes zu anderen Luftfahrzeugen','Der Auswertung von Signalen bodenseitiger Funknavigationsanlagen']},
+];
+
+// All questions alias
+const QUESTIONS = QQ;
+// ══════════════════════════════════════════════════════════
+// GIST SYNC
+// ══════════════════════════════════════════════════════════
+const GIST_KEY = 'aviation-bzf-progress';
+let ghToken = localStorage.getItem('gh_token') || '';
+let gistId   = localStorage.getItem('gh_gist_aviation') || '';
+let syncTimeout = null;
+
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot' + (state ? ' ' + state : '');
+  lbl.textContent = text;
+}
+
+async function loadFromGist() {
+  if (!ghToken || !gistId) { setSyncStatus('','Kein Sync'); return; }
+  setSyncStatus('syncing','Lade...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    const content = data.files[GIST_KEY + '.json']?.content;
+    if (content) {
+      const saved = JSON.parse(content);
+      if (saved.scores) { Object.assign(qScores, saved.scores); }
+      if (saved.totalCorrect) totalCorrect = saved.totalCorrect;
+      if (saved.totalWrong) totalWrong = saved.totalWrong;
+    }
+    setSyncStatus('ok', 'Synced ✓');
+    updateQuizStats();
+    if (document.getElementById('page-quiz').classList.contains('active')) initQuiz();
+  } catch(e) {
+    setSyncStatus('err', 'Sync-Fehler');
+    console.error('Gist load error:', e);
+  }
+}
+
+async function saveToGist() {
+  if (!ghToken) return;
+  setSyncStatus('syncing','Speichere...');
+  const payload = JSON.stringify({
+    scores: qScores,
+    totalCorrect, totalWrong,
+    lastUpdated: new Date().toISOString()
+  }, null, 2);
+  try {
+    let url = 'https://api.github.com/gists';
+    let method = 'POST';
+    let body = { description: 'PPL BZF I Quiz Progress', public: false,
+      files: { [GIST_KEY + '.json']: { content: payload } } };
+    if (gistId) { url += '/' + gistId; method = 'PATCH'; }
+    const r = await fetch(url, {
+      method, headers: { Authorization: `token ${ghToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    if (!gistId) {
+      gistId = data.id;
+      localStorage.setItem('gh_gist_aviation', gistId);
+      document.getElementById('inp-gist').value = gistId;
+    }
+    setSyncStatus('ok', 'Gespeichert ✓');
+  } catch(e) {
+    setSyncStatus('err', 'Speicher-Fehler');
+    console.error('Gist save error:', e);
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(saveToGist, 1500);
+}
+
+function openModal() {
+  document.getElementById('inp-token').value = ghToken;
+  document.getElementById('inp-gist').value  = gistId;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('show'); }
+function saveToken() {
+  ghToken = document.getElementById('inp-token').value.trim();
+  gistId  = document.getElementById('inp-gist').value.trim();
+  localStorage.setItem('gh_token', ghToken);
+  localStorage.setItem('gh_gist_aviation', gistId);
+  closeModal();
+  loadFromGist();
+}
+
+// ══════════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'quiz') initQuiz();
+}
+
+// ══════════════════════════════════════════════════════════
+// ABBREVIATIONS
+// ══════════════════════════════════════════════════════════
+let abbrevFilter = 'all';
+function toggleFilter(btn, f) {
+  abbrevFilter = f;
+  document.querySelectorAll('#abbrev-filters .filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderAbbrev();
+}
+function renderAbbrev() {
+  const q = document.getElementById('abbrev-search').value.toLowerCase();
+  const el = document.getElementById('abbrev-cards');
+  const catMap = {inst:'b-inst',eng:'b-eng',nav:'b-nav',atc:'b-atc',wx:'b-wx',gen:'b-gen',perf:'b-perf',lic:'b-lic'};
+  const filtered = ABBREVS.filter(d => {
+    const matchCat = abbrevFilter === 'all' || d.cat === abbrevFilter;
+    const matchQ = !q || d.a.toLowerCase().includes(q) || d.f.toLowerCase().includes(q) || d.d.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--tx2);padding:20px;font-family:var(--mono);font-size:13px">Keine Treffer<\/div>'; return; }
+  el.innerHTML = filtered.map(d => `
+    <div class="card">
+      <div class="card-abbr">${d.a} <span class="badge ${catMap[d.cat]||'b-gen'}">${d.cat}<\/span><\/div>
+      <div class="card-full">${d.f}<\/div>
+      <div class="card-desc">${d.d}<\/div>
+    <\/div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// PHONETIC
+// ══════════════════════════════════════════════════════════
+function renderPhonetic() {
+  document.getElementById('ph-grid').innerHTML = PHONETIC.map(p => `
+    <div class="ph-card">
+      <div class="ph-letter">${p.l}<\/div>
+      <div><div class="ph-word">${p.w}<\/div><div class="ph-pron">${p.p}<\/div><\/div>
+    <\/div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// PHRASES
+// ══════════════════════════════════════════════════════════
+function renderPhrases() {
+  const q = (document.getElementById('phrase-search')?.value || '').toLowerCase();
+  const filtered = PHRASES.filter(d =>
+    !q || d.en.toLowerCase().includes(q) || d.de.toLowerCase().includes(q) || d.ctx.toLowerCase().includes(q)
+  );
+  document.getElementById('phrase-list').innerHTML = filtered.map(d => `
+    <div class="phrase-card">
+      <div class="phrase-en">${d.en}<\/div>
+      <div><div class="phrase-de">${d.de}<\/div><div class="phrase-ctx">${d.ctx}<\/div><\/div>
+    <\/div>`).join('');
+
+  document.getElementById('scenarios-list').innerHTML = SCENARIOS.map(s => `
+    <div class="scenario">
+      <div class="sc-label">${s.label}<\/div>
+      <div class="sc-lines">
+        ${s.lines.map(l => `
+          <div>
+            <div class="sc-line">
+              <span class="spk ${l.w==='ATC'?'spk-atc':'spk-pilot'}">${l.w}<\/span>
+              <span class="sc-text">${l.t}<\/span>
+            <\/div>
+            ${l.tr ? `<div class="sc-trans">${l.tr}<\/div>` : ''}
+          <\/div>`).join('')}
+      <\/div>
+    <\/div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// NUMBERS
+// ══════════════════════════════════════════════════════════
+function renderNumbers() {
+  document.getElementById('num-grid').innerHTML = NUMS.map(n => `
+    <div class="num-card">
+      <div class="num-digit">${n.d}<\/div>
+      <div><div class="num-word">${n.w}<\/div><div class="num-pron">${n.p}<\/div><\/div>
+    <\/div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// SPEEDS
+// ══════════════════════════════════════════════════════════
+function renderSpeeds() {
+  document.getElementById('spd-tbody').innerHTML = SPEEDS.map(s => `
+    <tr>
+      <td class="spd-code">${s.c}<\/td>
+      <td style="color:var(--tx)">${s.n}<\/td>
+      <td style="color:var(--tx2);font-size:12px">${s.en}<\/td>
+      <td style="font-family:var(--mono);color:var(--ac2)">${s.v}<\/td>
+      <td><span class="spd-dot" style="background:${s.col}"><\/span><span style="color:var(--tx2);font-size:12px">${s.mark}<\/span><\/td>
+      <td style="color:var(--tx2);font-size:12px">${s.d}<\/td>
+    <\/tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// LUFTRAUM CARDS
+// ══════════════════════════════════════════════════════════
+function renderLuftraum() {
+  document.getElementById('lr-cards').innerHTML = LR_DATA.map(c => `
+    <div class="lr-card" style="background:${c.bg};border-color:${c.col}40">
+      <div class="lr-class" style="color:${c.col}">${c.cls}<\/div>
+      <div style="display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:3px;background:${c.bg};color:${c.col};margin-bottom:6px;border:1px solid ${c.col}40">${c.badge}<\/div>
+      <div class="lr-name" style="color:${c.col}">${c.name}<\/div>
+      <div class="lr-rows">${c.rows.map(([k,v]) => `<div><strong>${k}:<\/strong> ${v}<\/div>`).join('')}<\/div>
+    <\/div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// QUIZ ENGINE
+// ══════════════════════════════════════════════════════════
+let qScores = {};        // id → correct count (max 3)
+let qQueue  = [];
+let qIdx    = 0;
+let qAnswered = false;
+let totalCorrect = 0;
+let totalWrong   = 0;
+let streak = 0;
+let qFilter = 'all';
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildQueue(filter) {
+  const pool = filter === 'all' ? QUESTIONS : QUESTIONS.filter(q => q.cat === filter);
+  return shuffle(pool.filter(q => (qScores[q.id]||0) < 3));
+}
+
+function setQFilter(f, btn) {
+  qFilter = f;
+  document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  qQueue = buildQueue(f);
+  qIdx = 0;
+  showQuestion();
+  updateQuizStats();
+}
+
+function initQuiz() {
+  qQueue = buildQueue(qFilter);
+  qIdx = 0;
+  showQuestion();
+  updateQuizStats();
+}
+
+function showQuestion() {
+  // Check if all done
+  const pool = qFilter === 'all' ? QUESTIONS : QUESTIONS.filter(q => q.cat === qFilter);
+  if (pool.every(q => (qScores[q.id]||0) >= 3)) {
+    document.getElementById('q-area').style.display = 'none';
+    document.getElementById('q-done').classList.add('show');
+    return;
+  }
+  if (qQueue.length === 0) {
+    qQueue = buildQueue(qFilter);
+    qIdx = 0;
+  }
+  document.getElementById('q-area').style.display = 'block';
+  document.getElementById('q-done').classList.remove('show');
+
+  qAnswered = false;
+  const q = qQueue[qIdx % qQueue.length];
+  const sc = qScores[q.id] || 0;
+
+  document.getElementById('q-num').textContent = `Frage ${q.id} / ${QUESTIONS.length}`;
+  document.getElementById('q-text').textContent = q.q;
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('d'+i).className = 'qdot' + (i < sc ? ' lit' : '');
+  }
+
+  const shuffled = shuffle(q.o);
+  const letters = ['A','B','C','D'];
+  // Store current question answer for safe access
+  window._currentCorrect = q.a;
+  window._currentOpts = shuffled;
+  document.getElementById('q-opts').innerHTML = shuffled.map((opt, i) => `
+    <button class="q-opt" data-idx="${i}" onclick="checkAnswer(${i},this)">
+      <span class="opt-ltr">${letters[i]}<\/span><span>${opt}<\/span>
+    <\/button>`).join('');
+
+  document.getElementById('q-fb').className = 'q-fb';
+  document.getElementById('q-fb').textContent = '';
+  document.getElementById('q-next').className = 'q-next';
+}
+
+function checkAnswer(idx, btn) {
+  if (qAnswered) return;
+  qAnswered = true;
+  const chosen  = window._currentOpts[idx];
+  const correct = window._currentCorrect;
+  const q = qQueue[qIdx % qQueue.length];
+  const isCorrect = chosen === correct;
+  const fb = document.getElementById('q-fb');
+
+  document.querySelectorAll('.q-opt').forEach(b => {
+    b.disabled = true;
+    const txt = b.querySelector('span:last-child').textContent;
+    if (txt === correct) b.classList.add('correct');
+  });
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    qScores[q.id] = Math.min((qScores[q.id]||0)+1, 3);
+    totalCorrect++; streak++;
+    fb.className = 'q-fb ok show';
+    fb.textContent = qScores[q.id] === 3
+      ? `✓ Richtig! Frage gemeistert (3/3) 🏆`
+      : `✓ Richtig! ${qScores[q.id]}/3 korrekt beantwortet.`;
+    if (qScores[q.id] >= 3) {
+      qQueue.splice(qIdx % qQueue.length, 1);
+    } else {
+      qIdx++;
+    }
+  } else {
+    btn.classList.add('wrong');
+    totalWrong++; streak = 0;
+    qScores[q.id] = 0;
+    fb.className = 'q-fb bad show';
+    fb.textContent = `✗ Falsch. Richtige Antwort ist markiert. Fortschritt für diese Frage zurückgesetzt.`;
+    qIdx++;
+  }
+
+  document.getElementById('q-next').className = 'q-next show';
+  updateQuizStats();
+  scheduleSave();
+}
+
+function nextQ() { showQuestion(); }
+
+function updateQuizStats() {
+  const pool = qFilter === 'all' ? QUESTIONS : QUESTIONS.filter(q => q.cat === qFilter);
+  const mastered = pool.filter(q => (qScores[q.id]||0) >= 3).length;
+  const pct = Math.round((mastered/pool.length)*100);
+  document.getElementById('qs-mastered').textContent = mastered;
+  document.getElementById('qs-remain').textContent   = pool.length - mastered;
+  document.getElementById('qs-streak').textContent   = streak;
+  document.getElementById('qs-correct').textContent  = totalCorrect;
+  const rate = (totalCorrect+totalWrong) > 0 ? Math.round(totalCorrect/(totalCorrect+totalWrong)*100) : 0;
+  document.getElementById('qs-pct').textContent = (totalCorrect+totalWrong) > 0 ? rate+'%' : '—';
+  document.getElementById('prog-fill').style.width  = pct+'%';
+  document.getElementById('prog-text').textContent  = `${mastered} / ${pool.length} gemeistert (3× richtig)`;
+  document.getElementById('prog-pct').textContent   = pct+'%';
+}
+
+function restartQuiz() {
+  qScores = {}; totalCorrect = 0; totalWrong = 0; streak = 0;
+  qQueue = buildQueue(qFilter); qIdx = 0;
+  document.getElementById('q-done').classList.remove('show');
+  document.getElementById('q-area').style.display = 'block';
+  showQuestion(); updateQuizStats();
+  scheduleSave();
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+function safeInit() {
+  try { renderAbbrev(); } catch(e) { console.error('renderAbbrev:', e); }
+  try { renderPhonetic(); } catch(e) { console.error('renderPhonetic:', e); }
+  try { renderPhrases(); } catch(e) { console.error('renderPhrases:', e); }
+  try { renderNumbers(); } catch(e) { console.error('renderNumbers:', e); }
+  try { renderSpeeds(); } catch(e) { console.error('renderSpeeds:', e); }
+  try { renderLuftraum(); } catch(e) { console.error('renderLuftraum:', e); }
+  if (ghToken) loadFromGist();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', safeInit);
+} else {
+  safeInit();
+}
+</script>
+</body></html>
