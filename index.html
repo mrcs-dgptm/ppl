@@ -264,6 +264,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="sync-status">
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-label">Kein Sync</span>
+      <button class="btn-token" onclick="manualSync()" id="btn-sync" title="Fortschritt in Gist speichern">↑ Sync</button>
       <button class="btn-token" onclick="openModal()">⚙ Gist</button>
     </div>
   </div>
@@ -2307,16 +2308,41 @@ async function loadFromGist() {
     const data = await r.json();
     const fileContent = data.files[GIST_KEY + '.json']?.content;
     if (fileContent) {
-      const saved = parsePayload(fileContent);
-      Object.assign(qScores, saved.scores);
-      totalCorrect = saved.totalCorrect;
-      totalWrong = saved.totalWrong;
+      const gistData = JSON.parse(fileContent);
+      const gistTs = gistData.t || 0;
+      // Get local timestamp
+      let localTs = 0;
+      try {
+        const localRaw = localStorage.getItem('aviation_scores');
+        if (localRaw) { const ld = JSON.parse(localRaw); localTs = ld.t || 0; }
+      } catch(e) {}
+      if (gistTs >= localTs) {
+        // Gist is newer or same – use it
+        const saved = parsePayload(fileContent);
+        qScores = {};
+        Object.assign(qScores, saved.scores);
+        totalCorrect = saved.totalCorrect;
+        totalWrong = saved.totalWrong;
+        saveLocal(); // sync local to match gist
+        setSyncStatus('ok', 'Synced ✓');
+      } else {
+        // Local is newer – push local to Gist
+        setSyncStatus('syncing', 'Lokaler Stand neuer – speichere...');
+        await saveToGist();
+        return;
+      }
+    } else {
+      // No Gist content yet – push local if we have data
+      if (Object.keys(qScores).length > 0) {
+        await saveToGist();
+        return;
+      }
+      setSyncStatus('ok', 'Synced ✓');
     }
-    setSyncStatus('ok', 'Synced ✓');
     updateQuizStats();
     if (document.getElementById('page-quiz').classList.contains('active')) initQuiz();
   } catch(e) {
-    setSyncStatus('err', 'Sync-Fehler');
+    setSyncStatus('err', 'Sync-Fehler (lokaler Stand erhalten)');
     console.error('Gist load error:', e);
   }
 }
@@ -2360,6 +2386,7 @@ async function saveToGist() {
   saveLocal();
   if (!ghToken) return;
   setSyncStatus('syncing','Speichere...');
+  document.getElementById('btn-sync').textContent = '↑ ...';
   const payload = buildPayload();
   try {
     let url = 'https://api.github.com/gists';
@@ -2372,10 +2399,9 @@ async function saveToGist() {
       body: JSON.stringify(body)
     });
     if (r.status === 403 || r.status === 429) {
-      saveRetryCount++;
-      const delay = Math.min(30000, 3000 * saveRetryCount);
-      setSyncStatus('syncing', 'Warte ' + Math.round(delay/1000) + 's...');
-      syncTimeout = setTimeout(saveToGist, delay);
+      setSyncStatus('err', 'Rate-Limit – warte kurz, dann nochmal ↑ Sync drücken');
+      const sb3 = document.getElementById('btn-sync');
+      if (sb3) sb3.textContent = '↑ Sync';
       return;
     }
     if (!r.ok) throw new Error(r.status);
@@ -2387,8 +2413,12 @@ async function saveToGist() {
     }
     saveRetryCount = 0;
     setSyncStatus('ok', 'Gespeichert \u2713');
+    const sb = document.getElementById('btn-sync');
+    if (sb) { sb.textContent = '✓ Sync'; setTimeout(() => { sb.textContent = '↑ Sync'; }, 2000); }
   } catch(e) {
-    setSyncStatus('err', 'Sync-Fehler (lokal OK)');
+    setSyncStatus('err', 'Sync-Fehler');
+    const sb2 = document.getElementById('btn-sync');
+    if (sb2) { sb2.textContent = '↑ Sync'; }
     console.error('Gist save error:', e);
     if (saveRetryCount < 3) {
       saveRetryCount++;
@@ -2398,9 +2428,12 @@ async function saveToGist() {
 }
 
 function scheduleSave() {
-  clearTimeout(syncTimeout);
-  saveLocal();
-  syncTimeout = setTimeout(saveToGist, 2000);
+  saveLocal(); // always save locally after every answer
+  setSyncStatus('ok', 'Lokal ✓');
+}
+
+function manualSync() {
+  saveToGist();
 }
 
 function openModal() {
@@ -2701,7 +2734,9 @@ function safeInit() {
   try { renderPhrasesNew(); } catch(e) { console.error('renderPhrasesNew:', e); }
   try { renderNumbers(); } catch(e) { console.error('renderNumbers:', e); }
   try { renderLuftraum(); } catch(e) { console.error('renderLuftraum:', e); }
-  loadLocal(); if (ghToken) loadFromGist(); else { updateQuizStats(); }
+  loadLocal();
+  updateQuizStats();
+  if (ghToken) loadFromGist(); // only overwrites if gist is newer
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', safeInit);
