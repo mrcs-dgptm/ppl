@@ -273,13 +273,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <nav id="nav">
   <div class="nav-inner">
     <button class="ntab active" onclick="showPage('abbrev',this)">Abkürzungen</button>
-    <button class="ntab" onclick="showPage('phonetic',this)">Buchstabieren</button>
+    <button class="ntab" onclick="showPage('phonetic',this)">Ziffern & Buchstabieren</button>
     <button class="ntab" onclick="showPage('phrases',this)">Phraseologie</button>
-    <button class="ntab" onclick="showPage('numbers',this)">Zahlen</button>
-    <button class="ntab" onclick="showPage('speeds',this)">V-Speeds</button>
     <button class="ntab" onclick="showPage('peilungen',this)">Peilungen</button>
     <button class="ntab" onclick="showPage('luftraum',this)">Luftraum</button>
-    <button class="ntab" onclick="showPage('zahlen',this)">Zahlenregeln</button>
+    <button class="ntab" onclick="showPage('aquila',this)">Aquila AT01</button>
+    <button class="ntab" onclick="showPage('checklists',this)">Checklisten</button>
     <button class="ntab" onclick="showPage('quiz',this)">Quiz ▸</button>
   </div>
 </nav>
@@ -299,6 +298,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <button class="filter-btn" onclick="toggleFilter(this,'nav')" data-f="nav">Navigation</button>
       <button class="filter-btn" onclick="toggleFilter(this,'atc')" data-f="atc">ATC</button>
       <button class="filter-btn" onclick="toggleFilter(this,'wx')" data-f="wx">Wetter</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'perf')" data-f="perf">V-Speeds</button>
       <button class="filter-btn" onclick="toggleFilter(this,'lic')" data-f="lic">Lizenzen</button>
       <button class="filter-btn" onclick="toggleFilter(this,'gen')" data-f="gen">Allgemein</button>
     </div>
@@ -310,7 +310,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
      PAGE: PHONETIC
 ════════════════════════════════════════════ -->
 <div class="page" id="page-phonetic">
-  <div class="sec-title">ICAO / NATO Buchstabiertafel</div>
+  <div class="sec-title">Ziffern im Funk</div>
+  <div class="num-grid" id="num-grid"></div>
+  <div class="sec-title" style="margin-top:16px">ICAO / NATO Buchstabiertafel</div>
   <div class="ph-grid" id="ph-grid"></div>
   <div class="sec-title" style="margin-top:8px">Aussprache Besonderheiten</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
@@ -332,17 +334,16 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <input class="search-input" type="text" id="phrase-search" placeholder="Suchen…" oninput="renderPhrases()">
     </div>
   </div>
-  <div class="sec-title">Standard-Redewendungen (DE / EN)</div>
-  <div class="phrase-list" id="phrase-list"></div>
-
-  <div class="sec-title" style="margin-top:8px">Vollständige Dialogszenarien</div>
-  <div id="scenarios-list"></div>
+  <div id="phrases-container"></div>
+  <!-- kept for legacy compat -->
+  <div id="phrase-list" style="display:none"></div>
+  <div id="scenarios-list" style="display:none"></div>
 </div>
 
 <!-- ════════════════════════════════════════════
      PAGE: NUMBERS
 ════════════════════════════════════════════ -->
-<div class="page" id="page-numbers">
+<div class="page" id="page-numbers" style="display:none!important">
   <div class="sec-title">Ziffern im Funk</div>
   <div class="num-grid" id="num-grid"></div>
   <div class="sec-title" style="margin-top:8px">Besondere Aussprachen</div>
@@ -359,7 +360,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <!-- ════════════════════════════════════════════
      PAGE: V-SPEEDS
 ════════════════════════════════════════════ -->
-<div class="page" id="page-speeds">
+<div class="page" id="page-speeds" style="display:none!important">
   <div class="sec-title">V-Speeds – Geschwindigkeiten (Cessna 172 Richtwerte)</div>
   <table class="spd-table">
     <thead><tr><th>Kürzel</th><th>Bezeichnung (DE)</th><th>Bezeichnung (EN)</th><th>Wert</th><th>ASI-Farbe</th><th>Bedeutung</th></tr></thead>
@@ -582,6 +583,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div>
 
   <div class="lr-cards" id="lr-cards"></div>
+  <div id="vmc-content"></div>
 
   <div class="full-row">
     <div class="z-title">TRANSPONDER-NOTCODES</div>
@@ -598,7 +600,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <!-- ════════════════════════════════════════════
      PAGE: ZAHLENREGELN
 ════════════════════════════════════════════ -->
-<div class="page" id="page-zahlen">
+<div class="page" id="page-zahlen" style="display:none!important">
   <div class="sec-title">Readback-Pflicht (SERA.8015 · DFS 2024)</div>
   <div class="rb-grid" style="margin-bottom:14px">
     <div class="rb-card">
@@ -664,6 +666,20 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="z-block" style="border-left:3px solid var(--ac3);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--ac3)">4/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--ac3)">HÖRE SIE VIER</div></div>
     <div class="z-block" style="border-left:3px solid var(--ac);padding:12px"><div style="font-family:var(--mono);font-size:18px;color:var(--ac)">5/5</div><div style="font-size:12px;color:#fff;margin:3px 0">Sehr gut verständlich</div><div style="font-family:var(--mono);font-size:10px;color:var(--ac)">HÖRE SIE FÜNF</div></div>
   </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: AQUILA
+════════════════════════════════════════════ -->
+<div class="page" id="page-aquila">
+  <div id="aquila-content"></div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE: CHECKLISTS
+════════════════════════════════════════════ -->
+<div class="page" id="page-checklists">
+  <div id="checklists-content"></div>
 </div>
 
 <!-- ════════════════════════════════════════════
@@ -1236,6 +1252,1036 @@ const QQ = [
 // All questions alias
 const QUESTIONS = QQ;
 // ══════════════════════════════════════════════════════════
+// AQUILA AT01-100C DATA (from POH/AFM FM-AT01-1010-103 A09)
+// ══════════════════════════════════════════════════════════
+const AQUILA = {
+  general: {
+    name: 'AQUILA AT01-100C',
+    cert: 'JAR-VLA (LBA Germany)',
+    crew: 2,
+    seats: 2,
+    minCrew: 'Solo nur vom linken Sitz',
+    wingspan: '10.30 m / 33.79 ft',
+    length: '7.40 m / 24.28 ft',
+    height: '2.40 m / 7.87 ft',
+    wingArea: '10.50 m²',
+    construction: 'GFK/CFK (Glasfaser/Carbon)',
+  },
+  weights: [
+    {label:'MTOW (Max. Takeoff Weight)',val:'750 kg / 1653 lb'},
+    {label:'MLW (Max. Landing Weight)',val:'750 kg / 1653 lb'},
+    {label:'Max. Gepäck',val:'40 kg / 88.2 lb'},
+    {label:'Max. Flächenbelastung',val:'71.4 kg/m² / 14.6 lb/ft²'},
+    {label:'Leergewicht',val:'Siehe Section 6 des POH'},
+  ],
+  speeds: [
+    {code:'VNE',name:'Never Exceed Speed',val:'165 KIAS',col:'#ff4060',mark:'Roter Strich',note:'Unter keinen Umständen überschreiten'},
+    {code:'VNO',name:'Max. Structural Cruise',val:'130 KIAS',col:'#34d399',mark:'Grüner Bogen oben',note:'Nur in ruhiger Luft überschreiten – mit Vorsicht'},
+    {code:'VA',name:'Maneuvering Speed',val:'112 KIAS',col:'#6a85a8',mark:'—',note:'Keine vollen Steuerausschläge oberhalb dieser Geschwindigkeit'},
+    {code:'VFE',name:'Max. Flaps Extended',val:'90 KIAS',col:'#ffffff',mark:'Weißer Bogen oben',note:'T/O oder LDG Klappenstellung nicht überschreiten'},
+    {code:'VX',name:'Best Angle of Climb',val:'52 KIAS',col:'#6a85a8',mark:'—',note:'Bester Steigwinkel – kurzes Hindernis'},
+    {code:'VY',name:'Best Rate of Climb',val:'65 KIAS',col:'#6a85a8',mark:'—',note:'Beste Steigrate auf Meereshöhe, Flaps UP'},
+    {code:'VAPP',name:'Final Approach Speed',val:'60 KIAS',col:'#6a85a8',mark:'—',note:'Flaps LDG – auch bei Balked Landing'},
+    {code:'VRotate',name:'Rotation Speed',val:'50 KIAS',col:'#6a85a8',mark:'—',note:'Nasenrad abheben – Steigflug mit 57 KIAS'},
+    {code:'Vs',name:'Stall Speed (clean)',val:'~45 KIAS',col:'#ff4060',mark:'Grüner Bogen unten',note:'Ohne Motorleistung'},
+    {code:'VS0',name:'Stall Speed (flaps LDG)',val:'~39 KIAS',col:'#ff4060',mark:'Weißer Bogen unten',note:'Ohne Motorleistung, Klappen voll'},
+    {code:'VGlide UP',name:'Best Glide (Flaps UP)',val:'78 KIAS',col:'#6a85a8',mark:'—',note:'Bestes Gleiten ohne Klappen'},
+    {code:'VGlide T/O',name:'Best Glide (Flaps T/O)',val:'73 KIAS',col:'#6a85a8',mark:'—',note:'Bestes Gleiten Startklappen'},
+    {code:'XWind',name:'Max. Crosswind Demo',val:'15 kt',col:'#6a85a8',mark:'—',note:'Maximale demonstrierte Seitenwindkomponente'},
+  ],
+  engine: [
+    {label:'Hersteller',val:'BRP-ROTAX GmbH & Co KG, Österreich'},
+    {label:'Modell',val:'ROTAX 912 S3'},
+    {label:'Typ',val:'4-Takt, 4-Zylinder, Flüssigkeitskühlung (Köpfe), Luftkühlung (Zylinder)'},
+    {label:'Hubraum',val:'1352 cm³'},
+    {label:'Untersetzungsgetriebe',val:'2.43 : 1 (Motor- zu Propellerdrehzahl)'},
+    {label:'Tachometer',val:'Zeigt PROPELLERDREHZAHL (nicht Motordrehzahl)!'},
+    {label:'Max. Start-Leistung (TOP)',val:'98.6 BHP / 73.5 kW @ 2385 RPM (max. 5 Min.)'},
+    {label:'Max. Dauerleistung (MCP)',val:'92.5 BHP / 69.0 kW @ 2260 RPM'},
+  ],
+  engineLimits: [
+    {label:'Öldruck Min.',val:'0.8 bar (unter 590 RPM)'},
+    {label:'Öldruck Normal',val:'2.0–5.0 bar (über 590 RPM)'},
+    {label:'Öldruck Max. Kaltstart',val:'7.0 bar (kurzzeitig)'},
+    {label:'Öltemperatur Max.',val:'130°C / 266°F'},
+    {label:'Öltemperatur Min.',val:'50°C / 122°F (vor Vollgas)'},
+    {label:'Kraftstoffdruck Min.',val:'0.15 bar'},
+    {label:'Kraftstoffdruck Max.',val:'0.5 bar'},
+    {label:'CHT Max.',val:'120°C / 248°F (129°C/264°F kurzzeitig)'},
+    {label:'Min. Starttemperatur',val:'-25°C / -13°F (darunter: vorwärmen)'},
+  ],
+  propeller: [
+    {label:'Hersteller',val:'mt-Propeller Entwicklung GmbH, Deutschland'},
+    {label:'Modell',val:'MTV-21-A/170-05'},
+    {label:'Typ',val:'Hydraulisch verstellbarer Verstellpropeller'},
+    {label:'Durchmesser',val:'1.70 m / 66.9 in'},
+    {label:'Max. Startdrehzahl',val:'2385 RPM (max. 5 Minuten)'},
+    {label:'Max. Dauerdrehzahl',val:'2260 RPM'},
+  ],
+  fuel: [
+    {label:'Kraftstofftyp',val:'AVGAS 100LL (ASTM D4814) – MOGAS nur mit Freigabe im POH'},
+    {label:'Gesamtkapazität',val:'2 × 60 l = 120 l / 31.6 US gal'},
+    {label:'Nutzbar gesamt',val:'2 × 54.8 l = 109.6 l / 28.96 US gal'},
+    {label:'Nicht nutzbar',val:'2 × 5.2 l = 10.4 l'},
+    {label:'Entnahme',val:'Immer vom volleren Tank starten'},
+  ],
+  oil: [
+    {label:'Ölspezifikation',val:'API "SG" oder höher – schwerer 4-Takt-Motoröl'},
+    {label:'Max. Füllmenge',val:'3.17 US quarts / ~3 l'},
+    {label:'Differenz Max/Min',val:'Gemäß Rotax Service Instructions SI-912-016'},
+    {label:'Max. Verbrauch',val:'Gemäß Rotax Handbuch'},
+  ],
+  cgLimits: [
+    {label:'Referenzdatum',val:'Flügelvorderkante an der Rumpf-Flügel-Verbindung'},
+    {label:'Vordere CG-Grenze',val:'427 mm / 16.8 in hinter Datum'},
+    {label:'Hintere CG-Grenze',val:'523 mm / 20.6 in hinter Datum'},
+    {label:'Berechnung',val:'Gemäß Section 6 des POH vor jedem Flug prüfen'},
+  ],
+  maneuvers: [
+    {label:'Erlaubt',val:'Normale, nicht-akrobatische Manöver; Stalls (Wings level); Steilkurven bis 60° Querneigung; Chandelle (120 kt Entry); Lazy Eight (110 kt Entry)'},
+    {label:'VERBOTEN',val:'Akrobatik, Querneigung > 60°, Negativlasten (absichtlich), Trudeln (absichtlich)'},
+    {label:'Lastvielfache +',val:'+4.0 g (bei VA und VNE); +2.0 g mit ausgefahrenen Klappen'},
+    {label:'Lastvielfache –',val:'-2.0 g (bei VA und VNE); 0 g mit Klappen'},
+  ],
+  avionics: [
+    {label:'PFD / MFD',val:'Garmin G500 / G500 TXi'},
+    {label:'Motor-Monitor',val:'MVP-50P-AQ (Glass Panel Engine Monitor)'},
+    {label:'AHRS',val:'Integriert in Garmin G500'},
+    {label:'ADC',val:'Air Data Computer – integriert'},
+    {label:'Transponder',val:'Mode A/C/S – gemäß Ausrüstungsliste'},
+    {label:'COM',val:'VHF-Sprechfunk – gemäß Ausrüstungsliste'},
+  ],
+  ops: [
+    {label:'Betrieb',val:'VFR bei Tag (DVFR) – Zulassung laut Bordbuch prüfen'},
+    {label:'Max. Betriebshöhe',val:'Gemäß Section 5 des POH (Performance)'},
+    {label:'Min. Besatzung',val:'1 Pilot (nur linker Sitz bei Solo)'},
+    {label:'Max. Personen an Bord',val:'2'},
+    {label:'Flug in Regen',val:'Stall-Geschwindigkeit kann um bis zu 3 kt steigen; ASI-Anzeige kann abweichen'},
+    {label:'Flughandbuch',val:'POH muss jederzeit an Bord mitgeführt werden'},
+  ],
+};
+
+// ══════════════════════════════════════════════════════════
+// CHECKLISTS (from Section 3 + 4 of POH)
+// ══════════════════════════════════════════════════════════
+const CHECKLISTS = {
+  normal: [
+    {
+      id:'before-start', title:'4.5.1 – Vor dem Anlassen', color:'#85B7EB',
+      items:[
+        {n:'1',item:'Kraftstoff-Ablassventile (linke/rechte Tragfläche)',action:'Entwässern und auf Verunreinigungen prüfen'},
+        {n:'2',item:'Kraftstoff-Pumpen-Ablassventil',action:'Entwässern und auf Verunreinigungen prüfen'},
+        {n:'3',item:'Borddokumentation',action:'AN BORD prüfen'},
+        {n:'4',item:'Zündschlüssel',action:'ENTFERNT'},
+        {n:'5',item:'ALT1/BAT-Schalter',action:'EIN'},
+        {n:'6',item:'Warnleuchten',action:'TEST drücken – alle leuchten'},
+        {n:'7',item:'ALT1-Schalter',action:'AUS'},
+        {n:'8',item:'Motorinstrumente',action:'PRÜFEN'},
+        {n:'9',item:'Kraftstoffmenge',action:'PRÜFEN'},
+        {n:'10',item:'Navigationslichter',action:'EIN, PRÜFEN, AUS'},
+        {n:'11',item:'Landelicht',action:'EIN, PRÜFEN, AUS'},
+        {n:'12',item:'BAT-Schalter',action:'AUS'},
+        {n:'13',item:'ELT',action:'Betrieb PRÜFEN'},
+        {n:'14',item:'Fremdkörper Kabine',action:'PRÜFEN und entfernen'},
+        {n:'15',item:'Gepäck',action:'VERSTAUT und GESICHERT'},
+        {n:'16',item:'Haube',action:'Zustand und Sauberkeit PRÜFEN'},
+        {n:'—',item:'⚠ HINWEIS: ALT1/BAT einschalten',action:'Hinweise auf PFD/MFD beachten – AHRS braucht mehrere Minuten'},
+        {n:'15',item:'ALT1/BAT-Schalter',action:'EIN'},
+        {n:'16',item:'ALT1-Warnleuchte',action:'LEUCHTET'},
+        {n:'17',item:'ENG-Warnleuchte',action:'LEUCHTET'},
+        {n:'18',item:'P/S-HEAT-Warnleuchte (falls eingebaut)',action:'LEUCHTET'},
+        {n:'19',item:'ACL-Schalter (Kollisionsschutzlicht)',action:'EIN'},
+      ]
+    },
+    {
+      id:'engine-start', title:'4.5.2 – Anlassen', color:'#85B7EB',
+      items:[
+        {n:'1',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'2',item:'Kraftstoffdruck',action:'Im GRÜNEN Bereich'},
+        {n:'3',item:'Gashebel',action:'Kalter Motor: LEERLAUF / Heißer Motor: 2 cm GEÖFFNET'},
+        {n:'4',item:'Choke',action:'Kalter Motor: ZIEHEN und gehalten / Heißer Motor: EINGESCHOBEN'},
+        {n:'5',item:'Bremsen',action:'BEIDE Pedale DRÜCKEN'},
+        {n:'6',item:'Propellerbereich',action:'FREI'},
+        {n:'7',item:'Zündschlüssel',action:'START, dann BOTH'},
+        {n:'8',item:'Öldruck',action:'PRÜFEN – muss innerhalb 10 Sekunden steigen!'},
+        {n:'—',item:'⚠ ACHTUNG: Starter',action:'Nicht länger als 10 Sek. betätigen – mind. 2 Min. Pause zwischen Startversuchen'},
+        {n:'9',item:'ALT1-Warnleuchte',action:'ERLISCHT'},
+        {n:'10',item:'Kraftstoffpumpe',action:'AUS'},
+        {n:'—',item:'⚠ Motor warm laufen lassen',action:'~2 Min. bei 800 RPM, dann 1000 RPM bis Öltemperatur ≥ 50°C'},
+      ]
+    },
+    {
+      id:'before-taxi', title:'4.5.3 – Vor dem Rollen', color:'#85B7EB',
+      items:[
+        {n:'1',item:'Avionik-Schalter',action:'EIN'},
+        {n:'2',item:'Avionik und Fluginstrumente',action:'EINSTELLEN'},
+        {n:'3',item:'Annunciator Panel',action:'TEST – ALT1, ALT2, ENG (gelb), ENG (rot) leuchten'},
+        {n:'4',item:'Motorinstrumente',action:'PRÜFEN'},
+        {n:'5',item:'Voltmeter',action:'GRÜN'},
+        {n:'6',item:'Amperemeter',action:'GRÜN'},
+        {n:'7',item:'Trimmschalter und -anzeige',action:'Funktion PRÜFEN'},
+        {n:'8',item:'Klappenschalter und -anzeige',action:'Funktion PRÜFEN, danach UP'},
+        {n:'9',item:'P/S-Heat-Schalter (falls eingebaut)',action:'EIN – Warnleuchte erlischt; dann AUS – Warnleuchte leuchtet'},
+        {n:'10',item:'Alle Schalter',action:'NACH BEDARF'},
+      ]
+    },
+    {
+      id:'taxiing', title:'4.5.4 – Rollen', color:'#85B7EB',
+      items:[
+        {n:'1',item:'Parkbremse',action:'LÖSEN'},
+        {n:'2',item:'Bremsen',action:'PRÜFEN'},
+        {n:'3',item:'Bugradsteuerung',action:'Funktion PRÜFEN'},
+        {n:'4',item:'Fluginstrumente und Avionik',action:'PRÜFEN (Funktion, freie Beweglichkeit)'},
+        {n:'—',item:'⚠ ACHTUNG',action:'Kein hoher Gasstand beim Rollen – Propellerschäden durch Steine!'},
+      ]
+    },
+    {
+      id:'before-takeoff', title:'4.5.5 – Vor dem Start (Rollhalt)', color:'#FAC775',
+      items:[
+        {n:'1',item:'Bremsen',action:'BETÄTIGEN'},
+        {n:'2',item:'Parkbremse',action:'SETZEN'},
+        {n:'3',item:'Kompass und Kreiselgeräte',action:'Einstellung PRÜFEN'},
+        {n:'4',item:'Kraftstoff-Absperrhahn',action:'Links oder Rechts – volleren Tank wählen'},
+        {n:'5',item:'Kraftstoffdruck',action:'GRÜNER Bereich (sonst: kein Start!)'},
+        {n:'6',item:'Motorinstrumente',action:'GRÜNER Bereich'},
+        {n:'7',item:'Gashebel',action:'1700 RPM EINSTELLEN'},
+        {n:'8',item:'Zündung (Magneto-Check)',action:'L-BOTH-R-BOTH – max. Abfall: 120 RPM / max. Differenz L/R: 50 RPM'},
+        {n:'9',item:'Vergaservorwärmung',action:'ZIEHEN (EIN) – Abfall 20–50 RPM, dann PUSH (AUS)'},
+        {n:'10',item:'Vergasertemperaturanzeige (falls eingebaut)',action:'PRÜFEN'},
+        {n:'11',item:'Verstellpropeller',action:'3× zwischen HIGH und LOW RPM wechseln: Abfall ~200±50 RPM; dann START'},
+        {n:'—',item:'⚠ Verstellpropeller langsam zurückziehen',action:'Kurbelwelle schonen – langsam betätigen!'},
+        {n:'12',item:'Gashebel',action:'LEERLAUF'},
+        {n:'13',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'14',item:'Klappen',action:'T/O Position'},
+        {n:'15',item:'Trimmung',action:'Weiße Markierung'},
+        {n:'16',item:'Sicherungen',action:'ALLE gesetzt PRÜFEN'},
+        {n:'17',item:'Steuerhorn',action:'Freie Beweglichkeit PRÜFEN'},
+        {n:'18',item:'Anschnallgurt',action:'BEFESTIGT und STRAMM'},
+        {n:'19',item:'Haube',action:'GESCHLOSSEN und VERRIEGELT'},
+        {n:'20',item:'Parkbremse',action:'LÖSEN'},
+      ]
+    },
+    {
+      id:'takeoff', title:'4.5.6 – Start (bis 50 ft)', color:'#FAC775',
+      items:[
+        {n:'1',item:'Gashebel',action:'VOLLGAS'},
+        {n:'2',item:'Tachometer',action:'2300–2385 RPM PRÜFEN'},
+        {n:'3',item:'Höhenruder',action:'NEUTRAL beim Startlauf'},
+        {n:'4',item:'Seitenruder',action:'Richtung halten'},
+        {n:'5',item:'Rotationsgeschwindigkeit',action:'50 KIAS – Nase heben'},
+        {n:'6',item:'Steigfluggeschwindigkeit',action:'57 KIAS (Normal) / 52 KIAS (Vx, kürzeste Strecke)'},
+        {n:'—',item:'⚠ Leistungsänderung',action:'Erhöhen: erst RPM, dann Throttle / Reduzieren: erst Throttle, dann RPM'},
+      ]
+    },
+    {
+      id:'climb', title:'4.5.7 – Steigflug', color:'#85B7EB',
+      items:[
+        {n:'1',item:'Gashebel',action:'VOLLGAS'},
+        {n:'2',item:'Verstellpropeller',action:'2385 RPM (max. 5 Min.), danach 2260 RPM'},
+        {n:'3',item:'Motorinstrumente',action:'GRÜNER Bereich'},
+        {n:'—',item:'ℹ Hinweis ENG-Warnleuchte',action:'Beim Start/Steigflug mit Vollgas leuchtet ENG gelb (RPM > MCP) – max. 5 Min. zulässig'},
+        {n:'4',item:'Klappen',action:'UP'},
+        {n:'5',item:'Steiggeschwindigkeit',action:'65 KIAS (Vy)'},
+        {n:'6',item:'Landelicht',action:'AUS'},
+        {n:'7',item:'Trimmung',action:'NACH BEDARF'},
+      ]
+    },
+    {
+      id:'cruise', title:'4.5.8 – Reiseflug', color:'#00d4ff',
+      items:[
+        {n:'1',item:'Gashebel',action:'NACH BEDARF (Ref. Section 5)'},
+        {n:'2',item:'Verstellpropeller',action:'1650–2260 RPM EINSTELLEN'},
+        {n:'—',item:'⚠ ACHTUNG',action:'Kein Dauerbetrieb Vollgas + RPM unter 2140 – Motorschäden möglich (besonders unter 3000 ft / hohe CHT)'},
+        {n:'3',item:'Klappen',action:'UP'},
+        {n:'4',item:'Kraftstoffpumpe',action:'AUS'},
+        {n:'5',item:'Trimmung',action:'NACH BEDARF'},
+        {n:'6',item:'P/S-Heat (falls eingebaut)',action:'NACH BEDARF (AUS bei OAT > 15°C)'},
+        {n:'7',item:'Motorinstrumente',action:'GRÜNER Bereich – regelmäßig prüfen'},
+        {n:'8',item:'Vergasertemperaturanzeige (falls eingebaut)',action:'BEOBACHTEN'},
+      ]
+    },
+    {
+      id:'descent', title:'4.5.9 – Sinkflug', color:'#00d4ff',
+      items:[
+        {n:'1',item:'Gashebel',action:'ZUERST reduzieren – NACH BEDARF'},
+        {n:'2',item:'Verstellpropeller',action:'DANN über 2000 RPM einstellen'},
+        {n:'3',item:'Vergaservorwärmung',action:'NACH BEDARF'},
+        {n:'4',item:'Vergasertemperaturanzeige (falls eingebaut)',action:'BEOBACHTEN'},
+        {n:'—',item:'⚠ Schneller Sinkflug',action:'Throttle LEERLAUF, Propeller START, Vergaservorwärmung EIN, Klappen UP, 130 KIAS, Öltemperatur im Grünen halten'},
+      ]
+    },
+    {
+      id:'landing', title:'4.5.10 – Landung', color:'#97C459',
+      items:[
+        {n:'1',item:'Anschnallgurt',action:'PRÜFEN SICHER'},
+        {n:'2',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'3',item:'Vergaservorwärmung',action:'ZIEHEN (EIN)'},
+        {n:'4',item:'Gashebel',action:'NACH BEDARF'},
+        {n:'5',item:'Fahrt',action:'90 KIAS'},
+        {n:'6',item:'Klappen',action:'T/O oder LDG'},
+        {n:'7',item:'Trimmung',action:'NACH BEDARF'},
+        {n:'8',item:'Klappen',action:'LDG'},
+        {n:'9',item:'Anfluggeschwindigkeit',action:'60 KIAS'},
+        {n:'10',item:'Verstellpropeller',action:'START Position'},
+        {n:'11',item:'Landelicht',action:'EIN (nach Bedarf)'},
+        {n:'—',item:'⚠ Bei Seitenwind/Turbulenz',action:'Evtl. weniger Klappen und höhere Anfluggeschwindigkeit – Urteil des Piloten'},
+      ]
+    },
+    {
+      id:'goaround', title:'4.5.11 – Durchstarten (Balked Landing)', color:'#ff6b35',
+      items:[
+        {n:'1',item:'Gashebel',action:'ZUERST VOLLGAS'},
+        {n:'2',item:'Verstellpropeller',action:'DANN START Position'},
+        {n:'3',item:'Vergaservorwärmung',action:'DRÜCKEN (AUS)'},
+        {n:'4',item:'Klappen',action:'T/O'},
+        {n:'5',item:'Steiggeschwindigkeit',action:'65 KIAS'},
+        {n:'—',item:'⚠ ACHTUNG',action:'Vollgas mit Vergaservorwärmung vermeiden – Motorschäden möglich'},
+      ]
+    },
+    {
+      id:'after-landing', title:'4.5.12 – Nach der Landung', color:'#97C459',
+      items:[
+        {n:'1',item:'Gashebel',action:'NACH BEDARF'},
+        {n:'2',item:'Klappen',action:'UP'},
+        {n:'3',item:'P/S-Heat (falls eingebaut)',action:'AUS'},
+        {n:'4',item:'Vergaservorwärmung',action:'DRÜCKEN (AUS)'},
+        {n:'5',item:'Kraftstoffpumpe',action:'AUS'},
+        {n:'6',item:'Transponder',action:'AUS (oder STANDBY)'},
+        {n:'7',item:'Landelicht',action:'AUS'},
+      ]
+    },
+    {
+      id:'shutdown', title:'4.5.13 – Abstellen / Motor-Abschaltung', color:'#888780',
+      items:[
+        {n:'1',item:'Gashebel',action:'LEERLAUF'},
+        {n:'2',item:'Parkbremse',action:'SETZEN'},
+        {n:'3',item:'Klappen',action:'LDG Position'},
+        {n:'4',item:'ELT',action:'PRÜFEN (Frequenz 121.5 MHz)'},
+        {n:'5',item:'Avionik-Schalter',action:'AUS'},
+        {n:'6',item:'Zündschlüssel',action:'AUS'},
+        {n:'7',item:'Elektrische Geräte',action:'AUS'},
+        {n:'8',item:'ALT1/BAT-Schalter',action:'AUS'},
+        {n:'—',item:'ℹ Hinweis',action:'G500/G500 TXi und MVP-50P-AQ werden mit ALT1/BAT-Schalter ausgeschaltet'},
+        {n:'9',item:'Bremsklötze und Verzurrungen',action:'NACH BEDARF'},
+      ]
+    },
+    {
+      id:'refuel', title:'4.5.14 – Betanken', color:'#888780',
+      items:[
+        {n:'1',item:'Motor abstellen',action:'Gemäß 4.5.13'},
+        {n:'2',item:'Flugzeug erden',action:'PFLICHT (z.B. am Auspuffrohr)'},
+        {n:'—',item:'⚠ ACHTUNG Kraftstoff',action:'AVGAS 100LL (ASTM D4814). MOGAS nur mit POH-Freigabe. Beide Tanks gleich befüllen.'},
+        {n:'3',item:'Tankdeckel öffnen',action:'Zapfpistole vorsichtig einführen – Beschädigungen vermeiden'},
+        {n:'4',item:'Beide Tanks gleich befüllen',action:'Gleiche Mengen links und rechts'},
+        {n:'5',item:'Tankdeckel schließen',action:'FEST verschließen'},
+        {n:'6',item:'Erdungskabel entfernen',action:'ENTFERNEN'},
+      ]
+    },
+  ],
+  emergency: [
+    {
+      id:'eng-fail-ground', title:'3.3.1 – Motorausfall beim Start (Boden)', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'1',item:'Gashebel',action:'LEERLAUF'},
+        {n:'2',item:'Bremsen',action:'NACH BEDARF BETÄTIGEN'},
+      ]
+    },
+    {
+      id:'eng-fail-takeoff', title:'3.3.2 – Motorausfall nach dem Start / im Steigflug', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'1',item:'Fahrt (IAS)',action:'70 KIAS HALTEN'},
+        {n:'—',item:'⚠⚠ KRITISCH',action:'Umkehrkurve NUR bei ausreichender Höhe! Sonst: Geradeaus landen! Auf Geschwindigkeit achten!'},
+        {n:'2',item:'Kraftstoff-Absperrhahn',action:'Auf VOLLEREN oder anderen Tank umschalten'},
+        {n:'3',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'4',item:'Zündung',action:'BOTH'},
+        {n:'5',item:'Gashebel',action:'VOLLGAS'},
+        {n:'6',item:'Verstellpropeller',action:'START Position'},
+        {n:'7',item:'Choke',action:'DRÜCKEN (AUS)'},
+        {n:'8',item:'Vergaservorwärmung',action:'ZIEHEN (EIN)'},
+        {n:'—',item:'Vor der Landung (wenn möglich):',action:''},
+        {n:'9',item:'Kraftstoff-Absperrhahn',action:'AUS'},
+        {n:'10',item:'Zündung',action:'AUS'},
+        {n:'11',item:'ALT1/BAT-Schalter',action:'AUS – ⚠ Stauwarnanlage und Klappenverstellung inaktiv!'},
+      ]
+    },
+    {
+      id:'eng-fail-flight', title:'3.3.3 – Motorausfall im Flug', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'A',item:'MOTORRAUIGKEIT',action:''},
+        {n:'1',item:'Vergaservorwärmung',action:'ZIEHEN (EIN)'},
+        {n:'2',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'3',item:'Zündung',action:'L-BOTH – R-BOTH wechseln, dann einrasten lassen'},
+        {n:'4',item:'Gashebel',action:'Auf Minimum für Flug reduzieren'},
+        {n:'B',item:'ÖLDRUCKVERLUST',action:''},
+        {n:'1',item:'Öltemperatur',action:'PRÜFEN'},
+        {n:'—',item:'Wenn Öldruck unter Grünbereich, Öltemperatur normal:',action:'Nächsten Flugplatz anfliegen'},
+        {n:'—',item:'Wenn Öldruck unter Grünbereich, Öltemperatur steigt:',action:'Throttle reduzieren – Vorsichtslandung – Motor kann plötzlich ausfallen!'},
+        {n:'C',item:'KRAFTSTOFFDRUCKVERLUST',action:''},
+        {n:'1',item:'Kraftstoffpumpe',action:'EIN'},
+        {n:'2',item:'Kraftstoff-Absperrhahn',action:'Auf anderen Tank umschalten'},
+        {n:'3',item:'Kraftstoffpumpe',action:'AUS wenn Druck wieder grün'},
+        {n:'—',item:'⚠ Achtung',action:'Nach Tankwechsel bis zu 8 Sekunden bis Druckaufbau'},
+      ]
+    },
+    {
+      id:'forced-landing', title:'3.4.2 – Notlandung ohne Motorleistung', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'1',item:'Gleitgeschwindigkeit',action:'78 KIAS (Flaps UP) oder 73 KIAS (Flaps T/O)'},
+        {n:'2',item:'Geeignetes Gelände',action:'AUSWÄHLEN – geradeaus vor dem Flugzeug'},
+        {n:'3',item:'Transponder',action:'7700 SCHALTEN'},
+        {n:'4',item:'Funkmeldung',action:'MAYDAY auf aktueller Frequenz oder 121.5 MHz'},
+        {n:'5',item:'Kraftstoff-Absperrhahn',action:'AUS'},
+        {n:'6',item:'Zündung',action:'AUS'},
+        {n:'7',item:'ALT1/BAT',action:'AUS'},
+        {n:'8',item:'Anschnallgurt',action:'FEST ANZIEHEN'},
+        {n:'9',item:'Haube',action:'VOR der Landung ÖFFNEN und SICHERN'},
+        {n:'10',item:'Landung',action:'60 KIAS – Flaps LDG'},
+      ]
+    },
+    {
+      id:'engine-fire-flight', title:'3.5.2 – Motorbrand im Flug', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'1',item:'Kraftstoff-Absperrhahn',action:'AUS'},
+        {n:'2',item:'Gashebel',action:'LEERLAUF'},
+        {n:'3',item:'Vergaservorwärmung',action:'DRÜCKEN (AUS)'},
+        {n:'4',item:'Kraftstoffpumpe',action:'AUS'},
+        {n:'5',item:'Zündung',action:'AUS'},
+        {n:'6',item:'Fahrt',action:'Wenn Brand erlischt: Notlandung gemäß 3.4.2'},
+        {n:'—',item:'⚠',action:'Wenn Brand anhält: Fahrt erhöhen oder Gleitflug – Brand durch Fahrtwind löschen'},
+      ]
+    },
+    {
+      id:'electrical-fire', title:'3.5.4 – Elektrischer Brand im Flug', color:'#ff4060', warning:'WARNING',
+      items:[
+        {n:'1',item:'ALT1/BAT-Schalter',action:'AUS'},
+        {n:'2',item:'Alle Schalter (außer Zündung)',action:'AUS'},
+        {n:'3',item:'ALT1/BAT-Schalter',action:'EIN'},
+        {n:'4',item:'Schalter einzeln',action:'EIN – bis Fehlerquelle gefunden (Schalter in AUS lassen!)'},
+        {n:'5',item:'Nächster geeigneter Flugplatz',action:'UNVERZÜGLICH ANFLIEGEN'},
+      ]
+    },
+    {
+      id:'glide', title:'3.8 – Motorloser Gleitflug', color:'#FAC775',
+      items:[
+        {n:'—',item:'Bestes Gleiten Flaps UP',action:'78 KIAS'},
+        {n:'—',item:'Bestes Gleiten Flaps T/O',action:'73 KIAS'},
+        {n:'—',item:'Vorsichtslandung mit/ohne Motor',action:'60 KIAS (Flaps LDG)'},
+        {n:'—',item:'Landung ohne Motor Flaps T/O',action:'65 KIAS'},
+        {n:'—',item:'Landung ohne Motor Flaps UP',action:'70 KIAS'},
+      ]
+    },
+    {
+      id:'nordo', title:'3.13.2/3.13.3 – Funkausfall (NORDO)', color:'#FAC775',
+      items:[
+        {n:'—',item:'Empfangsausfall (nur Senden möglich)',action:'Auf Empfangsausfall hinweisen, Blindsendungen fortführen'},
+        {n:'1',item:'Transponder',action:'7600 SCHALTEN (Funkausfall)'},
+        {n:'2',item:'Auf bekannter Frequenz',action:'BLINDSENDUNGEN – Meldung 2× übermitteln, Zeitpunkt nächster Sendung nennen'},
+        {n:'3',item:'Nächster Flugplatz',action:'VFR-Signale beachten – Lichtzeichen vom Tower'},
+        {n:'—',item:'Sendeausfall (nur Empfangen möglich)',action:'Auf Lichtzeichen achten, weiter hören'},
+      ]
+    },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════
+// UPDATED SCENARIOS (corrected + new EDFE/EDDF)
+// ══════════════════════════════════════════════════════════
+const SCENARIOS_NEW = [
+  // ── EDFE (unkontrolliert) ──────────────────────────────
+  {
+    label:'EDFE · Abflug (Deutsch) – Unkontrollierter Platz',
+    airport:'EDFE',
+    info:'Vorfeld (Apron) 121.730 MHz → Information 118.405 MHz · RMZ/TMZ bis 1500ft MSL · Squawk 4440-4443 · Keine Freigaben – nur Information · Pilot entscheidet',
+    lines:[
+      {w:'PILOT',t:'Egelsbach Vorfeld, D-EABC.',tr:'Erstkontakt am Boden → VORFELD (121.730), nicht Information!'},
+      {w:'APRON',t:'D-EABC, Egelsbach Vorfeld, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, Abstellplatz, VFR nach Augsburg, erbitte Platzzustand.',tr:'Typ · Standort · Ziel · Anfrage beim Vorfeld'},
+      {w:'APRON',t:'D-EABC, Piste 26 in Betrieb, Wind zwei vier null Grad acht Knoten, QNH eins null eins acht, Squawk vier vier vier null.',tr:'Vorfeld gibt Platzinfos – keine Rollfreigabe, Koordination unter Piloten!'},
+      {w:'PILOT',t:'QNH eins null eins acht, Squawk vier vier vier null, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, rolle zum Rollhalt Piste 26, wechsle auf Egelsbach Information.',tr:'Vor dem Rollhalt: Wechsel auf Information 118.405'},
+      {w:'PILOT',t:'Egelsbach Information, D-EABC, Rollhalt Piste 26, VFR nach Augsburg, abflugbereit.',tr:'Auf Info melden – am Rollhalt'},
+      {w:'INFO',t:'D-EABC, Egelsbach Information, verstanden, kein bekannter Verkehr, starten auf eigene Entscheidung.',tr:'Keine Startfreigabe – Pilot entscheidet!'},
+      {w:'PILOT',t:'D-EABC, startet Piste 26.',tr:'Startmeldung – Pilot prüft Piste selbst'},
+      {w:'PILOT',t:'D-EABC, verlässt ATZ über Kilo-Ausflug, wechsle Frequenz.',tr:'Ausflug melden'},
+      {w:'INFO',t:'D-EABC, verstanden, auf Wiedersehen.',tr:''},
+      {w:'PILOT',t:'Auf Wiedersehen, D-EABC.',tr:''},
+    ]
+  },
+  {
+    label:'EDFE · Landung (Deutsch) – Unkontrollierter Platz',
+    airport:'EDFE',
+    info:'Information 118.405 MHz (Einflug+Platzrunde) · Vorfeld 121.730 MHz (Boden) · 10 Min. vor Meldepunkt melden · Keine Lande- oder Startfreigabe',
+    lines:[
+      {w:'PILOT',t:'Egelsbach Information, D-EABC.',tr:'Einleitungsanruf – mind. 10 Minuten vor dem Meldepunkt'},
+      {w:'INFO',t:'D-EABC, Egelsbach Information, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, über Darmstadt, eintausend fünf hundert Fuß, VFR von Augsburg, erbitte Platzinformation.',tr:'Position · Höhe · Herkunft · Anfrage'},
+      {w:'INFO',t:'D-EABC, Piste 08 in Betrieb, Wind null neun null Grad sechs Knoten, QNH eins null zwei null, Squawk vier vier vier eins, melden Sie über Echo-Meldepunkt.',tr:''},
+      {w:'PILOT',t:'Piste 08, QNH eins null zwei null, Squawk vier vier vier eins, melde über Echo, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, über Echo.',tr:'Pflichtmeldepunkt'},
+      {w:'INFO',t:'D-EABC, verstanden, kein bekannter Verkehr.',tr:'Keine Landefreigabe – Pilot entscheidet'},
+      {w:'PILOT',t:'D-EABC, Endanflug Piste 08.',tr:'Positionsmeldung Endanflug'},
+      {w:'PILOT',t:'D-EABC, gelandet, verlasse Piste, wechsle auf Egelsbach Vorfeld.',tr:'Nach Landung: Wechsel zurück auf Vorfeld 121.730'},
+      {w:'PILOT',t:'Egelsbach Vorfeld, D-EABC, nach Landung Piste 08, rolle zum Abstellplatz.',tr:''},
+      {w:'APRON',t:'D-EABC, Egelsbach Vorfeld, verstanden.',tr:''},
+    ]
+  },
+  // ── EDDF CTR-Transit ──────────────────────────────────
+  {
+    label:'EDDF · CTR-Transit (Deutsch) – Kontrollierte Zone',
+    airport:'EDDF',
+    info:'EDDF ATIS ARR 118.030 · Tower (South) 119.900 · CTR bis 2500 ft AMSL · VFR Squawk 4447',
+    lines:[
+      {w:'PILOT',t:'Frankfurt ATIS auf 118.030 abhören – Information Bravo erhalten.',tr:'ATIS immer zuerst abhören!'},
+      {w:'PILOT',t:'Frankfurt Turm, D-EABC.',tr:'Erstkontakt Tower – 5 Min. vor Pflichtmeldepunkt!'},
+      {w:'TWR',t:'D-EABC, Frankfurt Turm, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, zehn Meilen nördlich, zwei tausend Fuß, VFR, Information Bravo, erbitte CTR-Transit nach Egelsbach.',tr:'Position · Höhe · VFR · ATIS · Anfrage'},
+      {w:'TWR',t:'D-EABC, Squawk vier vier vier sieben, melden Sie über Meldepunkt Norden.',tr:'VFR-Squawk EDDF = 4447'},
+      {w:'PILOT',t:'Squawk vier vier vier sieben, melde über Norden, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, über Meldepunkt Norden.',tr:''},
+      {w:'TWR',t:'D-EABC, CTR-Transit genehmigt, nicht über zwei tausend Fuß, QNH eins null eins acht, melden Sie Verlassen der Kontrollzone.',tr:'Freigabe mit Höhenbeschränkung + QNH'},
+      {w:'PILOT',t:'CTR-Transit genehmigt, nicht über zwei tausend Fuß, QNH eins null eins acht, D-EABC.',tr:'Vollständiger Readback!'},
+      {w:'PILOT',t:'D-EABC, verlasse Kontrollzone südlich.',tr:''},
+      {w:'TWR',t:'D-EABC, verstanden, auf Wiedersehen.',tr:''},
+    ]
+  },
+  {
+    label:'EDDF · CTR-Transit (English)',
+    airport:'EDDF',
+    info:'EDDF ATIS ARR 118.030 · Tower (South) 119.900 · CTR up to 2500 ft AMSL · VFR Squawk 4447',
+    lines:[
+      {w:'PILOT',t:'Listen to Frankfurt ATIS on 118.030 – obtain information Bravo.',tr:'Always listen to ATIS first!'},
+      {w:'PILOT',t:'Frankfurt Tower, D-EABC.',tr:'Initial call – at least 5 min before reporting point'},
+      {w:'TWR',t:'D-EABC, Frankfurt Tower, go ahead.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, ten miles north, two thousand feet, VFR, information Bravo, request CTR transit to Egelsbach.',tr:''},
+      {w:'TWR',t:'D-EABC, squawk four four four seven, report over reporting point North.',tr:'VFR squawk EDDF = 4447'},
+      {w:'PILOT',t:'Squawk four four four seven, wilco, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, over reporting point North.',tr:''},
+      {w:'TWR',t:'D-EABC, CTR transit approved, not above two thousand feet, QNH one zero one eight, report leaving control zone.',tr:''},
+      {w:'PILOT',t:'CTR transit approved, not above two thousand feet, QNH one zero one eight, D-EABC.',tr:'Full readback!'},
+      {w:'PILOT',t:'D-EABC, leaving control zone to the south.',tr:''},
+      {w:'TWR',t:'D-EABC, roger, goodbye.',tr:''},
+    ]
+  },
+  // ── EDDF Abflug ───────────────────────────────────────
+  {
+    label:'EDDF · Abflug (Deutsch) – Delivery → Ground → Tower',
+    airport:'EDDF',
+    info:'ATIS DEP 118.730 · Delivery 121.900 (Anlassen/Startfreigabe) · Ground/Rollkontrolle 121.800 (Rollen) · Tower 119.900 (Start/Landung) · Apron/Vorfeld 121.850 (nach Landung zum Stand)',
+    lines:[
+      {w:'PILOT',t:'Frankfurt ATIS auf 118.730 abhören – Information Alpha erhalten.',tr:'Abflug-ATIS: 118.730'},
+      {w:'PILOT',t:'Frankfurt Delivery, D-EABC.',tr:'Erstkontakt immer Delivery für Startfreigabe/Transpondercode'},
+      {w:'DEL',t:'D-EABC, Frankfurt Delivery, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, Abstellplatz GAT, VFR nach Egelsbach, Information Alpha, erbitte Anlassen.',tr:'Standort · Ziel · ATIS · Anfrage'},
+      {w:'DEL',t:'D-EABC, QNH eins null eins acht, Squawk vier vier vier sieben, Anlassen genehmigt, nach dem Anlassen Frankfurt Rollkontrolle eins zwo eins Komma acht.',tr:'QNH + Squawk + Anlassen + nächste Frequenz'},
+      {w:'PILOT',t:'QNH eins null eins acht, Squawk vier vier vier sieben, Rollkontrolle eins zwo eins Komma acht, D-EABC.',tr:'Alle relevanten Infos zurücklesen'},
+      {w:'PILOT',t:'Frankfurt Rollkontrolle, D-EABC, Aquila, GAT, abflugbereit, VFR nach Egelsbach, erbitte Rollen.',tr:'Erstanruf Ground: Typ · Standort · abflugbereit · Ziel · Anfrage'},
+      {w:'GND',t:'D-EABC, rollen Sie zum Rollhalt Piste null sieben Rechts über Tango.',tr:'Rollanweisung – kein Warten auf Piste'},
+      {w:'PILOT',t:'Rollhalt Piste null sieben Rechts über Tango, D-EABC.',tr:'Rollweg zurücklesen'},
+      {w:'PILOT',t:'D-EABC, Rollhalt Piste null sieben Rechts, abflugbereit.',tr:'Bereit am Rollhalt – Tower kontaktieren'},
+      {w:'PILOT',t:'Frankfurt Turm, D-EABC.',tr:'Wechsel auf Tower – Ground hat übergeben'},
+      {w:'TWR',t:'D-EABC, Frankfurt Turm, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Rollhalt null sieben Rechts, abflugbereit, VFR nach Egelsbach.',tr:''},
+      {w:'TWR',t:'D-EABC, piste befahren und warten, Piste null sieben Rechts.',tr:'LINE UP AND WAIT – noch keine Startfreigabe!'},
+      {w:'PILOT',t:'Piste befahren und warten, Piste null sieben Rechts, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, Wind null sieben null Grad acht Knoten, Piste null sieben Rechts, Start frei.',tr:''},
+      {w:'PILOT',t:'Piste null sieben Rechts, Start frei, D-EABC.',tr:'Readback: Piste + Start frei + Rufzeichen'},
+      {w:'TWR',t:'D-EABC, nach dem Abheben wechseln Sie auf Langen Radar eins zwo null Komma acht.',tr:''},
+      {w:'PILOT',t:'Eins zwo null Komma acht, D-EABC.',tr:''},
+    ]
+  },
+  {
+    label:'EDDF · Abflug (English) – Delivery → Ground → Tower',
+    airport:'EDDF',
+    info:'ATIS DEP 118.730 · Delivery 121.900 · Ground/Rollkontrolle 121.800 · Tower 119.900',
+    lines:[
+      {w:'PILOT',t:'Listen to Frankfurt ATIS on 118.730 – information Alpha.',tr:'Departure ATIS: 118.730'},
+      {w:'PILOT',t:'Frankfurt Delivery, D-EABC.',tr:''},
+      {w:'DEL',t:'D-EABC, Frankfurt Delivery, go ahead.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, GAT apron, VFR to Egelsbach, information Alpha, request start-up.',tr:''},
+      {w:'DEL',t:'D-EABC, QNH one zero one eight, squawk four four four seven, start-up approved, after start-up contact Frankfurt Ground one two one decimal eight.',tr:''},
+      {w:'PILOT',t:'QNH one zero one eight, squawk four four four seven, Ground one two one decimal eight, D-EABC.',tr:''},
+      {w:'PILOT',t:'Frankfurt Ground, D-EABC, Aquila, GAT, ready for taxi, VFR to Egelsbach.',tr:''},
+      {w:'GND',t:'D-EABC, taxi to holding point runway zero seven right via Tango.',tr:''},
+      {w:'PILOT',t:'Holding point runway zero seven right via Tango, D-EABC.',tr:''},
+      {w:'PILOT',t:'Frankfurt Tower, D-EABC, holding point runway zero seven right, ready for departure, VFR to Egelsbach.',tr:''},
+      {w:'TWR',t:'D-EABC, line up and wait, runway zero seven right.',tr:'LINE UP AND WAIT – not yet cleared for take-off!'},
+      {w:'PILOT',t:'Line up and wait, runway zero seven right, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, wind zero seven zero degrees eight knots, runway zero seven right, cleared for take-off.',tr:''},
+      {w:'PILOT',t:'Runway zero seven right, cleared for take-off, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, after departure contact Langen Radar one two zero decimal eight.',tr:''},
+      {w:'PILOT',t:'One two zero decimal eight, D-EABC.',tr:''},
+    ]
+  },
+  // ── EDDF Landung ──────────────────────────────────────
+  {
+    label:'EDDF · Landung (Deutsch) – Tower → Apron',
+    airport:'EDDF',
+    info:'Tower (South) 119.900 · Apron (GAT) 121.850 · VFR Piste 07R/25L · Squawk 4447',
+    lines:[
+      {w:'PILOT',t:'Frankfurt ATIS auf 118.030 abhören – Information Charlie erhalten.',tr:'Anflug-ATIS: 118.030'},
+      {w:'PILOT',t:'Frankfurt Turm, D-EABC.',tr:'Erstkontakt mindestens 5 Min. vor Pflichtmeldepunkt'},
+      {w:'TWR',t:'D-EABC, Frankfurt Turm, kommen.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, zehn Meilen östlich, eintausend fünf hundert Fuß, VFR, Information Charlie, erbitte Einflug und Landung.',tr:'Position · Höhe · ATIS · Anfrage'},
+      {w:'TWR',t:'D-EABC, Squawk vier vier vier sieben, melden Sie über Meldepunkt Ost.',tr:''},
+      {w:'PILOT',t:'Squawk vier vier vier sieben, melde über Ost, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, über Meldepunkt Ost.',tr:''},
+      {w:'TWR',t:'D-EABC, Einflug genehmigt, nicht über eintausend fünf hundert Fuß, Piste null sieben Rechts, QNH eins null eins acht, Nummer zwei, folgen Sie der Cessna im langen Endanflug.',tr:''},
+      {w:'PILOT',t:'Einflug genehmigt, nicht über eintausend fünf hundert Fuß, Piste null sieben Rechts, QNH eins null eins acht, Nummer zwo, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, Endanflug Piste null sieben Rechts.',tr:''},
+      {w:'TWR',t:'D-EABC, Wind null sieben null Grad sechs Knoten, Piste null sieben Rechts, Landung frei.',tr:''},
+      {w:'PILOT',t:'Landung frei, Piste null sieben Rechts, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, nach dem Landen wenden Sie rechts ab und rufen Sie Frankfurt Apron eins zwo eins Komma acht fünf.',tr:'Nach Landung: Apron für GAT-Bereich'},
+      {w:'PILOT',t:'Rechts abwenden, Apron eins zwo eins Komma acht fünf, D-EABC.',tr:''},
+      {w:'PILOT',t:'Frankfurt Apron, D-EABC, Aquila, nach Landung Piste null sieben Rechts, erbitte Rollfreigabe GAT.',tr:'Erstanruf Apron'},
+      {w:'APRON',t:'D-EABC, rollen Sie über Tango zum GAT.',tr:''},
+      {w:'PILOT',t:'Tango zum GAT, D-EABC.',tr:''},
+    ]
+  },
+  {
+    label:'EDDF · Landung (English) – Tower → Apron',
+    airport:'EDDF',
+    info:'Tower (South) 119.900 · Apron (GAT) 121.850 · VFR runway 07R/25L · Squawk 4447',
+    lines:[
+      {w:'PILOT',t:'Listen to Frankfurt ATIS on 118.030 – information Charlie.',tr:'Arrival ATIS: 118.030'},
+      {w:'PILOT',t:'Frankfurt Tower, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, Frankfurt Tower, go ahead.',tr:''},
+      {w:'PILOT',t:'D-EABC, Aquila, ten miles east, one thousand five hundred feet, VFR, information Charlie, request entry and landing.',tr:''},
+      {w:'TWR',t:'D-EABC, squawk four four four seven, report over reporting point East.',tr:''},
+      {w:'PILOT',t:'Squawk four four four seven, wilco, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, over reporting point East.',tr:''},
+      {w:'TWR',t:'D-EABC, entry approved, not above one thousand five hundred feet, runway zero seven right, QNH one zero one eight, number two, follow the Cessna on long final.',tr:''},
+      {w:'PILOT',t:'Entry approved, not above one thousand five hundred feet, runway zero seven right, QNH one zero one eight, number two, D-EABC.',tr:''},
+      {w:'PILOT',t:'D-EABC, final runway zero seven right.',tr:''},
+      {w:'TWR',t:'D-EABC, wind zero seven zero degrees six knots, runway zero seven right, cleared to land.',tr:''},
+      {w:'PILOT',t:'Cleared to land, runway zero seven right, D-EABC.',tr:''},
+      {w:'TWR',t:'D-EABC, after landing turn right and contact Frankfurt Apron one two one decimal eight five.',tr:''},
+      {w:'PILOT',t:'Turn right, Apron one two one decimal eight five, D-EABC.',tr:''},
+      {w:'PILOT',t:'Frankfurt Apron, D-EABC, Aquila, vacated runway zero seven right, request taxi to GAT.',tr:''},
+      {w:'APRON',t:'D-EABC, taxi via Tango to GAT.',tr:''},
+      {w:'PILOT',t:'Tango to GAT, D-EABC.',tr:''},
+    ]
+  },
+  // ── Standard Szenarien (behalten) ──────────────────────
+  {
+    label:'Frequenzwechsel & Erstanruf',
+    airport:'',
+    info:'Gilt für alle Frequenzwechsel',
+    lines:[
+      {w:'ATC',t:'D-EABC, rufen Sie München Radar eins zwo sieben Komma neun sieben fünf, auf Wiedersehen.',tr:'Frequenz immer zurücklesen!'},
+      {w:'PILOT',t:'Eins zwo sieben Komma neun sieben fünf, D-EABC, auf Wiedersehen.',tr:''},
+      {w:'PILOT',t:'München Radar, D-EABC, Cessna 172, durchfliegend zwo tausend Fuß, VFR, bitte Fluginformationsdienst.',tr:'Erstanruf: Dienststelle · Rufzeichen · Typ · Höhe · VFR · Anfrage'},
+      {w:'ATC',t:'D-EABC, München Radar, QNH 1016, Fluginformationsdienst.',tr:''},
+      {w:'PILOT',t:'QNH 1016, D-EABC.',tr:''},
+    ]
+  },
+  {
+    label:'MAYDAY – Motorausfall',
+    airport:'',
+    info:'Auf aktueller Frequenz oder 121.5 MHz · Transponder 7700',
+    lines:[
+      {w:'PILOT',t:'MAYDAY MAYDAY MAYDAY, D-EABC, Motorausfall, Notlandung, fünf Meilen nördlich Augsburg, zwei tausend Fuß, eine Person an Bord, erbitte Hilfe.',tr:'MAYDAY 3× · Rufzeichen · Art der Not · Absicht · Position · Höhe · Personen an Bord'},
+      {w:'ATC',t:'D-EABC, MAYDAY bestätigt, Squawk sieben sieben null null, bestätigen Personen an Bord und Kraftstoff.',tr:''},
+      {w:'PILOT',t:'Squawk sieben sieben null null, eine Person an Bord, Kraftstoff dreißig Minuten, D-EABC.',tr:'7700 + Personen + Kraftstoff'},
+    ]
+  },
+  {
+    label:'MAYDAY (English) – Engine Failure',
+    airport:'',
+    info:'On current frequency or 121.5 MHz · Squawk 7700',
+    lines:[
+      {w:'PILOT',t:'MAYDAY MAYDAY MAYDAY, D-EABC, engine failure, forced landing, five miles north of Augsburg, two thousand feet, one person on board, request assistance.',tr:''},
+      {w:'ATC',t:'D-EABC, MAYDAY acknowledged, squawk seven seven zero zero, confirm persons on board and fuel.',tr:''},
+      {w:'PILOT',t:'Squawk seven seven zero zero, one person on board, fuel thirty minutes, D-EABC.',tr:''},
+    ]
+  },
+];
+
+
+// ══════════════════════════════════════════════════════════
+// UPDATED ABBREVS - V-Speeds added, no example values
+// ══════════════════════════════════════════════════════════
+const VSPEEDS_AS_ABBREV = [
+  {a:'VNE',f:'Never Exceed Speed',cat:'perf',d:'Höchstgeschwindigkeit – unter keinen Umständen überschreiten. Roter Strich am ASI.'},
+  {a:'VNO',f:'Maximum Structural Cruising Speed',cat:'perf',d:'Max. Reisefluggeschwindigkeit in ruhiger Luft. Oberes Ende des grünen Bogens / Beginn gelber Bogen.'},
+  {a:'VA',f:'Maneuvering Speed',cat:'perf',d:'Manövergeschwindigkeit – keine vollen Steuerausschläge oberhalb. Sinkt mit abnehmendem Gewicht.'},
+  {a:'VFE',f:'Maximum Flap Extended Speed',cat:'perf',d:'Max. Geschwindigkeit mit ausgefahrenen Klappen. Oberes Ende des weißen Bogens.'},
+  {a:'VX',f:'Best Angle of Climb Speed',cat:'perf',d:'Bester Steigwinkel – max. Höhe pro Distanz. Kurzes Hindernis nach dem Start.'},
+  {a:'VY',f:'Best Rate of Climb Speed',cat:'perf',d:'Beste Steigrate – max. Höhe pro Zeit. Standard-Steigfluggeschwindigkeit.'},
+  {a:'VS',f:'Stall Speed (clean)',cat:'perf',d:'Überziehgeschwindigkeit ohne Klappen – unteres Ende des grünen Bogens.'},
+  {a:'VS0',f:'Stall Speed (landing config)',cat:'perf',d:'Überziehgeschwindigkeit mit voll ausgefahrenen Klappen – unteres Ende des weißen Bogens.'},
+  {a:'VAPP',f:'Approach / Final Speed',cat:'perf',d:'Anfluggeschwindigkeit über der Schwelle – typisch 1.3 × VS0. Flugzeugabhängig.'},
+  {a:'VR',f:'Rotation Speed',cat:'perf',d:'Rotationsgeschwindigkeit – Nase heben zum Abheben.'},
+  {a:'VREF',f:'Reference Landing Speed',cat:'perf',d:'Referenzgeschwindigkeit für die Landung. Flugzeugabhängig, im POH nachschlagen.'},
+  {a:'VMCA',f:'Minimum Control Speed (Air)',cat:'perf',d:'Mindestgeschwindigkeit für Kontrolle bei Mehrmotorigen nach Triebwerksausfall. Nicht relevant für einmotorige SEP.'},
+];
+ABBREVS.push(...VSPEEDS_AS_ABBREV);
+
+// ══════════════════════════════════════════════════════════
+// RENDER: AQUILA TAB
+// ══════════════════════════════════════════════════════════
+function renderAquila() {
+  const el = document.getElementById('aquila-content');
+  if (!el) return;
+  const sec = (title, col, rows, keyWidth) => `
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:15px;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:10px;color:${col};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:10px">${title}<\/div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        ${rows.map(r=>`<tr style="border-bottom:1px solid rgba(28,37,53,.4)">
+          <td style="padding:7px 10px;color:var(--tx2);width:${keyWidth||'45%'};vertical-align:top">${r.label}<\/td>
+          <td style="padding:7px 10px;color:var(--tx);font-weight:500">${r.val}<\/td>
+        <\/tr>`).join('')}
+      <\/table>
+    <\/div>`;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:15px;margin-bottom:14px">
+      <div style="font-size:48px">✈<\/div>
+      <div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--ac)">${AQUILA.general.name}<\/div>
+        <div style="font-size:13px;color:var(--tx2);margin-top:2px">POH/AFM · FM-AT01-1010-103 · Issue A09 · JAR-VLA<\/div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          ${[
+            ['Spannweite',AQUILA.general.wingspan],
+            ['Länge',AQUILA.general.length],
+            ['Höhe',AQUILA.general.height],
+            ['Besatzung',AQUILA.general.crew],
+          ].map(([k,v])=>`<div style="background:var(--s3);border-radius:4px;padding:5px 10px;font-size:12px"><span style="color:var(--tx2)">${k}: <\/span><span style="color:var(--tx)">${v}<\/span><\/div>`).join('')}
+        <\/div>
+      <\/div>
+    <\/div>
+
+    ${sec('Gewichte',  '#00d4ff', AQUILA.weights)}
+    ${sec('Motor: ROTAX 912 S3', '#ff6b35', AQUILA.engine)}
+
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:15px;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ac);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:10px">Geschwindigkeiten (IAS) – Aquila AT01-100C<\/div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>
+          <th style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Code<\/th>
+          <th style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Name<\/th>
+          <th style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Wert<\/th>
+          <th style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">ASI<\/th>
+          <th style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Hinweis<\/th>
+        <\/tr><\/thead>
+        <tbody>
+          ${AQUILA.speeds.map(s=>`<tr style="border-bottom:1px solid rgba(28,37,53,.4)">
+            <td style="padding:8px 10px;font-family:var(--mono);color:${s.col};font-weight:700">${s.code}<\/td>
+            <td style="padding:8px 10px;color:var(--tx)">${s.name}<\/td>
+            <td style="padding:8px 10px;font-family:var(--mono);color:var(--ac2);font-weight:600">${s.val}<\/td>
+            <td style="padding:8px 10px;font-size:12px;color:var(--tx2)">${s.mark}<\/td>
+            <td style="padding:8px 10px;font-size:12px;color:var(--tx2)">${s.note}<\/td>
+          <\/tr>`).join('')}
+        <\/tbody>
+      <\/table>
+    <\/div>
+
+    ${sec('Motorgrenzwerte', '#ff4060', AQUILA.engineLimits)}
+    ${sec('Verstellpropeller', '#FAC775', AQUILA.propeller)}
+    ${sec('Kraftstoff', '#3dffa0', AQUILA.fuel)}
+    ${sec('Motoröl', '#888780', AQUILA.oil)}
+    ${sec('Schwerpunkt (CG)', '#c084fc', AQUILA.cgLimits)}
+    ${sec('Manöver & Lastvielfache', '#ff4060', AQUILA.maneuvers)}
+    ${sec('Avionik', '#85B7EB', AQUILA.avionics)}
+    ${sec('Betrieb', '#6a85a8', AQUILA.ops)}
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER: CHECKLISTS TAB
+// ══════════════════════════════════════════════════════════
+function renderChecklists() {
+  const el = document.getElementById('checklists-content');
+  if (!el) return;
+  const makeList = (items) => items.map(item=>`
+    <tr style="border-bottom:1px solid rgba(28,37,53,.3)">
+      <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--tx3);width:28px;text-align:right">${item.n}<\/td>
+      <td style="padding:7px 12px;color:var(--tx);font-size:13px">${item.item}<\/td>
+      <td style="padding:7px 12px;font-family:var(--mono);font-size:12px;color:var(--ac);font-weight:600;text-transform:uppercase">${item.action}<\/td>
+    <\/tr>`).join('');
+
+  const normalHtml = CHECKLISTS.normal.map(cl=>`
+    <div style="border:1px solid ${cl.color}30;border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <button onclick="toggleCL('cl-${cl.id}')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:${cl.color}15;border:none;cursor:pointer;color:var(--tx);font-family:var(--sans);font-size:14px;font-weight:600">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${cl.color};display:inline-block;flex-shrink:0"><\/span>
+          ${cl.title}
+        <\/span>
+        <span id="cl-${cl.id}-chevron" style="color:var(--tx2);transition:.2s">▼<\/span>
+      <\/button>
+      <div id="cl-${cl.id}" style="display:none">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:right;padding:5px 10px;border-bottom:1px solid var(--b1);width:28px">#<\/th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:left;padding:5px 12px;border-bottom:1px solid var(--b1)">PUNKT<\/th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:left;padding:5px 12px;border-bottom:1px solid var(--b1)">MASSNAHME<\/th>
+          <\/tr><\/thead>
+          <tbody>${makeList(cl.items)}<\/tbody>
+        <\/table>
+      <\/div>
+    <\/div>`).join('');
+
+  const emergencyHtml = CHECKLISTS.emergency.map(cl=>`
+    <div style="border:1px solid ${cl.color}50;border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <button onclick="toggleCL('em-${cl.id}')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:${cl.color}20;border:none;cursor:pointer;color:var(--tx);font-family:var(--sans);font-size:14px;font-weight:600">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="color:${cl.color}">⚠<\/span>
+          ${cl.title}
+        <\/span>
+        <span id="em-${cl.id}-chevron" style="color:var(--tx2);transition:.2s">▼<\/span>
+      <\/button>
+      <div id="em-${cl.id}" style="display:none">
+        <div style="background:${cl.color}10;border-bottom:1px solid ${cl.color}30;padding:8px 15px;font-size:12px;color:${cl.color}">
+          ⚠ Notverfahren – im Notfall auswendig kennen!
+        <\/div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:right;padding:5px 10px;border-bottom:1px solid var(--b1);width:28px">#<\/th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:left;padding:5px 12px;border-bottom:1px solid var(--b1)">PUNKT<\/th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:left;padding:5px 12px;border-bottom:1px solid var(--b1)">MASSNAHME<\/th>
+          <\/tr><\/thead>
+          <tbody>${makeList(cl.items)}<\/tbody>
+        <\/table>
+      <\/div>
+    <\/div>`).join('');
+
+  el.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px 15px;margin-bottom:14px;font-size:13px;color:var(--tx2);line-height:1.6">
+      <span style="color:var(--warn);font-weight:600">ℹ Hinweis:<\/span> Diese Checklisten stammen aus dem POH/AFM der Aquila AT01-100C (FM-AT01-1010-103, Issue A09). 
+      Dieses Dokument dient nur als Referenz. Im Flug ist das aktuelle, zugelassene Bordbuch zu verwenden.
+    <\/div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ac);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px">Section 4 – Normal Procedures<\/div>
+    ${normalHtml}
+    <div style="font-family:var(--mono);font-size:11px;color:var(--danger);letter-spacing:2.5px;text-transform:uppercase;margin:20px 0 12px">Section 3 – Emergency Procedures<\/div>
+    ${emergencyHtml}
+  `;
+}
+
+function toggleCL(id) {
+  const el = document.getElementById(id);
+  const ch = document.getElementById(id+'-chevron');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (ch) ch.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ══════════════════════════════════════════════════════════
+// UPDATED PHRASES RENDER (with collapsible sections)
+// ══════════════════════════════════════════════════════════
+function renderPhrasesNew() {
+  const q = (document.getElementById('phrase-search')?.value || '').toLowerCase();
+
+  // Section 1: Regeln (collapsible)
+  const regeln = `
+    <div style="border:1px solid var(--b2);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <button onclick="toggleSection('ph-regeln')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--s3);border:none;cursor:pointer;color:var(--tx);font-family:var(--sans);font-weight:600;font-size:14px">
+        <span>📋 Zahlenregeln & Übermittlung (DFS 2024)<\/span>
+        <span id="ph-regeln-chevron" style="color:var(--tx2);transition:.2s">▼<\/span>
+      <\/button>
+      <div id="ph-regeln" style="display:none;padding:14px">
+        ${renderRegelnContent()}
+      <\/div>
+    <\/div>`;
+
+  // Section 2: Standard phrases (collapsible, filterable)
+  const filteredPhrases = PHRASES.filter(d => !q || d.en.toLowerCase().includes(q) || d.de.toLowerCase().includes(q) || d.ctx.toLowerCase().includes(q));
+  const phrasesHtml = `
+    <div style="border:1px solid var(--b2);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <button onclick="toggleSection('ph-phrases')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--s3);border:none;cursor:pointer;color:var(--tx);font-family:var(--sans);font-weight:600;font-size:14px">
+        <span>💬 Standard-Redewendungen (${filteredPhrases.length})<\/span>
+        <span id="ph-phrases-chevron" style="color:var(--tx2);transition:.2s">▼<\/span>
+      <\/button>
+      <div id="ph-phrases" style="display:none;padding:14px">
+        <div class="phrase-list">
+          ${filteredPhrases.map(d=>`
+            <div class="phrase-card">
+              <div class="phrase-en">${d.en}<\/div>
+              <div><div class="phrase-de">${d.de}<\/div><div class="phrase-ctx">${d.ctx}<\/div><\/div>
+            <\/div>`).join('')}
+        <\/div>
+      <\/div>
+    <\/div>`;
+
+  // Section 3: Scenarios (collapsible, grouped by airport)
+  const airports = ['EDFE','EDDF',''];
+  const airportLabels = {'EDFE':'EDFE – Egelsbach (unkontrolliert)', 'EDDF':'EDDF – Frankfurt/Main (CTR)', '':`Allgemeine Szenarien`};
+  const scenariosHtml = `
+    <div style="border:1px solid var(--b2);border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <button onclick="toggleSection('ph-scenarios')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--s3);border:none;cursor:pointer;color:var(--tx);font-family:var(--sans);font-weight:600;font-size:14px">
+        <span>🎙 Dialogszenarien (${SCENARIOS_NEW.length})<\/span>
+        <span id="ph-scenarios-chevron" style="color:var(--tx2);transition:.2s">▼<\/span>
+      <\/button>
+      <div id="ph-scenarios" style="display:none;padding:14px">
+        ${airports.map(ap=>{
+          const group = SCENARIOS_NEW.filter(s => s.airport === ap);
+          if (!group.length) return '';
+          return `
+            <div style="font-family:var(--mono);font-size:10px;color:var(--ac2);letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px">${airportLabels[ap]}<\/div>
+            ${ap === 'EDFE' ? `<div style="background:var(--s3);border-left:3px solid var(--ac3);border-radius:0 6px 6px 0;padding:9px 12px;margin-bottom:10px;font-size:12px;color:var(--tx2)">
+              <strong style="color:var(--ac3)">EDFE Info:<\/strong> Unkontrollierter Platz (AFIS) · Info 118.405 MHz · RMZ/TMZ bis 1500 ft MSL · 
+              Squawks 4440–4443 · Keine Startfreigabe · Keine Landefreigabe · Pilot entscheidet · 10 Min. vor Meldepunkt melden
+            <\/div>` : ''}
+            ${ap === 'EDDF' ? `<div style="background:var(--s3);border-left:3px solid var(--warn);border-radius:0 6px 6px 0;padding:9px 12px;margin-bottom:10px;font-size:12px;color:var(--tx2)">
+              <strong style="color:var(--warn)">EDDF Frequenzen:<\/strong> ATIS ARR 118.030 · ATIS DEP 118.730 · 
+              Delivery 121.900 · Ground/Rollkontrolle 121.800 · Apron/Vorfeld 121.850 · Tower (South) 119.900 · Langen Radar 120.800 · VFR Squawk 4447 · CTR bis 2500 ft AMSL
+            <\/div>` : ''}
+            ${group.map(s=>`
+              <div class="scenario" style="margin-bottom:10px">
+                <div class="sc-label">${s.label}<\/div>
+                ${s.info ? `<div style="font-size:11px;color:var(--tx2);font-family:var(--mono);margin-bottom:8px;padding:5px 8px;background:var(--s3);border-radius:4px">${s.info}<\/div>` : ''}
+                <div class="sc-lines">
+                  ${s.lines.map(l=>`
+                    <div>
+                      <div class="sc-line">
+                        <span class="spk ${l.w==='ATC'||l.w==='TWR'||l.w==='DEL'||l.w==='GND'||l.w==='APRON'?'spk-atc':l.w==='INFO'?'spk-atc':'spk-pilot'}">${l.w}<\/span>
+                        <span class="sc-text">${l.t}<\/span>
+                      <\/div>
+                      ${l.tr ? `<div class="sc-trans">${l.tr}<\/div>` : ''}
+                    <\/div>`).join('')}
+                <\/div>
+              <\/div>`).join('')}
+          `;
+        }).join('')}
+      <\/div>
+    <\/div>`;
+
+  document.getElementById('phrase-list').innerHTML = '';
+  document.getElementById('scenarios-list').innerHTML = '';
+  document.getElementById('phrases-container').innerHTML = regeln + phrasesHtml + scenariosHtml;
+}
+
+function renderRegelnContent() {
+  return `
+    <div style="margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ac2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Readback-Pflicht (SERA.8015)<\/div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:10px">
+        <div style="background:var(--s3);border-radius:6px;padding:10px 12px">
+          <div style="font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(255,64,96,.15);color:var(--danger);margin-bottom:7px;display:inline-block">MUSS zurücklesen<\/div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.9">▸ Streckenfreigaben<br>▸ Start-/Landefreigabe<br>▸ Rollanweisungen auf Pisten<br>▸ Betriebspiste (Runway)<br>▸ QNH / QFE<br>▸ SSR-Code (Squawk)<br>▸ Neuer Funkkanal (Frequenz)<br>▸ Höhenanweisungen<br>▸ Kursanweisungen<br>▸ Geschwindigkeitsanweisungen<\/div>
+        <\/div>
+        <div style="background:var(--s3);border-radius:6px;padding:10px 12px">
+          <div style="font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(255,107,53,.15);color:var(--ac2);margin-bottom:7px;display:inline-block">SOLLTE bestätigen<\/div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.9">▸ Andere Freigaben<br>▸ Konditionelle Freigaben<br>▸ Rollanweisungen (allgemein)<br>▸ Verkehrshinweise<\/div>
+        <\/div>
+        <div style="background:var(--s3);border-radius:6px;padding:10px 12px">
+          <div style="font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(61,255,160,.1);color:var(--ac3);margin-bottom:7px;display:inline-block">NICHT zwingend<\/div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.9">▸ Wettermeldungen<br>▸ Allgemeine Hinweise<br>▸ CPDLC-Mitteilungen<br>▸ Baustelleninfos<\/div>
+        <\/div>
+      <\/div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ac);letter-spacing:2px;text-transform:uppercase;margin:14px 0 10px">Zahlenübermittlung (SERA.14035)<\/div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="font-family:var(--mono);font-size:9px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Was<\/th>
+          <th style="font-family:var(--mono);font-size:9px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Regel<\/th>
+          <th style="font-family:var(--mono);font-size:9px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Bsp. DE<\/th>
+          <th style="font-family:var(--mono);font-size:9px;color:var(--tx2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--b1)">Bsp. EN<\/th>
+        <\/tr><\/thead>
+        <tbody>
+          ${[
+            ['Steuerkurse, Pisten, Wind','Jede Ziffer einzeln','Piste 27 → PISTE ZWO SIEBEN','RUNWAY TWO SEVEN'],
+            ['Flugflächen (FL)','Einzeln – außer ganze Hunderter','FL 180 → EINS ACHT NULL','FL ONE EIGHT ZERO'],
+            ['QNH / hPa','Einzeln – Ausnahme: 1000 = EIN TAUSEND','1009 → EINS NULL NULL NEUN','ONE ZERO ZERO NINER'],
+            ['Höhen (ft)','Hunderter → HUNDERT, Tausender → TAUSEND','3400 ft → DREI TAUSEND VIER HUNDERT','THREE THOUSAND FOUR HUNDRED'],
+            ['Squawk-Codes','Jede Ziffer einzeln','2341 → ZWO DREI VIER EINS','TWO THREE FOUR ONE'],
+            ['Frequenzen (MHz)','6 Stellen mit KOMMA – wenn 5.+6.=00, nur 4 Stellen','118.025 → EINS EINS ACHT KOMMA NULL ZWO FÜNF','ONE ONE EIGHT DECIMAL ZERO TWO FIVE'],
+            ['Zeit (UTC)','4 Ziffern einzeln – wenn klar: 2-stellig (Minuten)','1318 → EINS DREI EINS ACHT','TIME ONE THREE ONE EIGHT'],
+            ['Sicht','< 5 km in Metern, ≥ 5 km in Kilometern','700 m → SICHT SIEBEN HUNDERT','VISIBILITY SEVEN HUNDRED'],
+          ].map(([w,r,de,en])=>`<tr style="border-bottom:1px solid rgba(28,37,53,.4)">
+            <td style="padding:7px 10px;color:var(--tx)">${w}<\/td>
+            <td style="padding:7px 10px;color:var(--tx2)">${r}<\/td>
+            <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--ac)">${de}<\/td>
+            <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--ac)">${en}<\/td>
+          <\/tr>`).join('')}
+        <\/tbody>
+      <\/table>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ac4);letter-spacing:2px;text-transform:uppercase;margin:14px 0 10px">Einheiten<\/div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">
+        ${[
+          ['Höhe','Fuß (ft)'],['Geschwindigkeit','Knoten (kt)'],['Steig-/Sinkrate','ft/min'],
+          ['Entfernung (Nav)','Seemeile (NM)'],['Sicht < 5 km','Meter (m)'],['Sicht ≥ 5 km','Kilometer (km)'],
+          ['Luftdruck','Hektopascal (hPa)'],['Windrichtung','° magnetisch, 3-stellig'],['Zeit','UTC – nie Ortszeit!'],
+        ].map(([k,v])=>`<div style="background:var(--s3);border-radius:5px;padding:8px 10px;font-size:12px">
+          <span style="color:var(--tx2)">${k}: <\/span><span style="color:var(--ac);font-family:var(--mono)">${v}<\/span>
+        <\/div>`).join('')}
+      <\/div>
+    <\/div>`;
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const ch = document.getElementById(id+'-chevron');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (ch) ch.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ══════════════════════════════════════════════════════════
+// VMC/VFR VISUAL – appended to Luftraum tab
+// ══════════════════════════════════════════════════════════
+function renderVMC() {
+  const el = document.getElementById('vmc-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ac);letter-spacing:2.5px;text-transform:uppercase;margin:20px 0 12px">VMC-Minima – Sichtflugbedingungen je Luftraumklasse<\/div>
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:14px;margin-bottom:12px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)">Klasse<\/th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)">Höhenbereich<\/th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)">Flugsicht<\/th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)">Wolkenabstand horiz.<\/th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx2);text-align:left;padding:7px 12px;border-bottom:1px solid var(--b1)">Wolkenabstand vertikal<\/th>
+        <\/tr><\/thead>
+        <tbody>
+          ${[
+            ['C/D','> FL100','8 km','1500 m','300 m (1000 ft)','#ED93B1'],
+            ['C/D/E','< FL100','5 km','1500 m','300 m (1000 ft)','#85B7EB'],
+            ['G','> 3000 ft AMSL oder > 1000 ft AGL','5 km','1500 m','300 m (1000 ft)','#B4B2A9'],
+            ['G','≤ 3000 ft AMSL UND ≤ 1000 ft AGL (≤ 140 kt IAS)','1500 m','Frei von Wolken','Frei von Wolken','#B4B2A9'],
+          ].map(([cls,ht,sicht,horiz,vert,col])=>`<tr style="border-bottom:1px solid rgba(28,37,53,.4)">
+            <td style="padding:8px 12px;font-family:var(--mono);font-size:15px;font-weight:700;color:${col}">${cls}<\/td>
+            <td style="padding:8px 12px;color:var(--tx2);font-size:12px">${ht}<\/td>
+            <td style="padding:8px 12px;font-family:var(--mono);color:var(--ac);font-weight:600">${sicht}<\/td>
+            <td style="padding:8px 12px;font-family:var(--mono);color:var(--ac3)">${horiz}<\/td>
+            <td style="padding:8px 12px;font-family:var(--mono);color:var(--ac3)">${vert}<\/td>
+          <\/tr>`).join('')}
+        <\/tbody>
+      <\/table>
+    <\/div>
+
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:14px;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--warn);letter-spacing:2px;margin-bottom:10px">CAVOK – CEILING AND VISIBILITY OK<\/div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+        ${[
+          ['Flugsicht','≥ 10 km'],['Wolken','Keine unter 5000 ft AGL'],['Signifikantes Wetter','Keines (kein Gewitter, kein Eis, keine Sicht unter 5000 m)'],['Aussprache','CAV-O-KAY'],
+        ].map(([k,v])=>`<div style="background:var(--s3);border-radius:6px;padding:10px 12px;border-left:3px solid var(--warn)">
+          <div style="font-size:11px;color:var(--tx2)">${k}<\/div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--warn);margin-top:2px">${v}<\/div>
+        <\/div>`).join('')}
+      <\/div>
+    <\/div>
+
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:14px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ac4);letter-spacing:2px;margin-bottom:10px">VMC vs IMC – Merkhilfe<\/div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:rgba(61,255,160,.08);border:1px solid rgba(61,255,160,.3);border-radius:6px;padding:12px">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ac3);margin-bottom:6px">VMC ✓<\/div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.7">Sicht vorhanden<br>Wolkenabstände eingehalten<br>VFR möglich<br>Pilot navigiert nach Sicht<\/div>
+        <\/div>
+        <div style="background:rgba(255,64,96,.08);border:1px solid rgba(255,64,96,.3);border-radius:6px;padding:12px">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--danger);margin-bottom:6px">IMC ✗<\/div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.7">Sicht unterschritten<br>In / unter Wolken<br>VFR nicht möglich!<br>Nur IFR (mit Berechtigung)<\/div>
+        <\/div>
+      <\/div>
+      <div style="margin-top:10px;background:var(--s3);border-left:3px solid var(--danger);border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;color:var(--tx2)">
+        <strong style="color:var(--danger)">VFR in IMC<\/strong> ist extrem gefährlich und verboten. Ein unerfahrener Pilot verliert in Wolken im Schnitt innerhalb von <strong style="color:#fff">178 Sekunden<\/strong> die räumliche Orientierung (controlled flight into terrain – CFIT).
+      <\/div>
+    <\/div>`;
+}
+
+
+// ══════════════════════════════════════════════════════════
 // GIST SYNC
 // ══════════════════════════════════════════════════════════
 const GIST_KEY = 'aviation-bzf-progress';
@@ -1259,12 +2305,12 @@ async function loadFromGist() {
     });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
-    const content = data.files[GIST_KEY + '.json']?.content;
-    if (content) {
-      const saved = JSON.parse(content);
-      if (saved.scores) { Object.assign(qScores, saved.scores); }
-      if (saved.totalCorrect) totalCorrect = saved.totalCorrect;
-      if (saved.totalWrong) totalWrong = saved.totalWrong;
+    const fileContent = data.files[GIST_KEY + '.json']?.content;
+    if (fileContent) {
+      const saved = parsePayload(fileContent);
+      Object.assign(qScores, saved.scores);
+      totalCorrect = saved.totalCorrect;
+      totalWrong = saved.totalWrong;
     }
     setSyncStatus('ok', 'Synced ✓');
     updateQuizStats();
@@ -1275,14 +2321,46 @@ async function loadFromGist() {
   }
 }
 
+function buildPayload() {
+  const compactScores = Object.entries(qScores)
+    .filter(([,v]) => v > 0)
+    .map(([k,v]) => [parseInt(k), v]);
+  return JSON.stringify({ s: compactScores, c: totalCorrect, w: totalWrong, t: Date.now() });
+}
+
+function parsePayload(raw) {
+  const d = JSON.parse(raw);
+  if (d.s) {
+    const scores = {};
+    d.s.forEach(([id, val]) => { scores[id] = val; });
+    return { scores, totalCorrect: d.c||0, totalWrong: d.w||0 };
+  }
+  return { scores: d.scores||{}, totalCorrect: d.totalCorrect||0, totalWrong: d.totalWrong||0 };
+}
+
+function saveLocal() {
+  try { localStorage.setItem('aviation_scores', buildPayload()); } catch(e) {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('aviation_scores');
+    if (!raw) return false;
+    const d = parsePayload(raw);
+    Object.assign(qScores, d.scores);
+    totalCorrect = d.totalCorrect;
+    totalWrong = d.totalWrong;
+    return true;
+  } catch(e) { return false; }
+}
+
+let saveRetryCount = 0;
+
 async function saveToGist() {
+  saveLocal();
   if (!ghToken) return;
   setSyncStatus('syncing','Speichere...');
-  const payload = JSON.stringify({
-    scores: qScores,
-    totalCorrect, totalWrong,
-    lastUpdated: new Date().toISOString()
-  }, null, 2);
+  const payload = buildPayload();
   try {
     let url = 'https://api.github.com/gists';
     let method = 'POST';
@@ -1290,9 +2368,16 @@ async function saveToGist() {
       files: { [GIST_KEY + '.json']: { content: payload } } };
     if (gistId) { url += '/' + gistId; method = 'PATCH'; }
     const r = await fetch(url, {
-      method, headers: { Authorization: `token ${ghToken}`, 'Content-Type': 'application/json' },
+      method, headers: { Authorization: 'token ' + ghToken, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+    if (r.status === 403 || r.status === 429) {
+      saveRetryCount++;
+      const delay = Math.min(30000, 3000 * saveRetryCount);
+      setSyncStatus('syncing', 'Warte ' + Math.round(delay/1000) + 's...');
+      syncTimeout = setTimeout(saveToGist, delay);
+      return;
+    }
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     if (!gistId) {
@@ -1300,16 +2385,22 @@ async function saveToGist() {
       localStorage.setItem('gh_gist_aviation', gistId);
       document.getElementById('inp-gist').value = gistId;
     }
-    setSyncStatus('ok', 'Gespeichert ✓');
+    saveRetryCount = 0;
+    setSyncStatus('ok', 'Gespeichert \u2713');
   } catch(e) {
-    setSyncStatus('err', 'Speicher-Fehler');
+    setSyncStatus('err', 'Sync-Fehler (lokal OK)');
     console.error('Gist save error:', e);
+    if (saveRetryCount < 3) {
+      saveRetryCount++;
+      syncTimeout = setTimeout(saveToGist, 10000);
+    }
   }
 }
 
 function scheduleSave() {
   clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(saveToGist, 1500);
+  saveLocal();
+  syncTimeout = setTimeout(saveToGist, 2000);
 }
 
 function openModal() {
@@ -1336,6 +2427,10 @@ function showPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'quiz') initQuiz();
+  if (id === 'aquila') renderAquila();
+  if (id === 'checklists') renderChecklists();
+  if (id === 'phrases') renderPhrasesNew();
+  if (id === 'luftraum') renderVMC();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1603,11 +2698,10 @@ function restartQuiz() {
 function safeInit() {
   try { renderAbbrev(); } catch(e) { console.error('renderAbbrev:', e); }
   try { renderPhonetic(); } catch(e) { console.error('renderPhonetic:', e); }
-  try { renderPhrases(); } catch(e) { console.error('renderPhrases:', e); }
+  try { renderPhrasesNew(); } catch(e) { console.error('renderPhrasesNew:', e); }
   try { renderNumbers(); } catch(e) { console.error('renderNumbers:', e); }
-  try { renderSpeeds(); } catch(e) { console.error('renderSpeeds:', e); }
   try { renderLuftraum(); } catch(e) { console.error('renderLuftraum:', e); }
-  if (ghToken) loadFromGist();
+  loadLocal(); if (ghToken) loadFromGist(); else { updateQuizStats(); }
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', safeInit);
